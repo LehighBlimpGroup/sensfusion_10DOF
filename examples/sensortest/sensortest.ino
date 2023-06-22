@@ -21,7 +21,7 @@ void setup() {
 
 void loop() {
   //gyro, acc, mag, euler, z
-  sensorSuite.sensfusionLoop(true, 4);
+  sensorSuite.sensfusionLoop(true, 5);
 
 
 }
