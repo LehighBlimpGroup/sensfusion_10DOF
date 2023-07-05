@@ -546,8 +546,8 @@ void SensFusion::initSensors(){
     // estimatedZ = baroGround;
     // rate = IMU.accelerationSampleRate();
   } else if (sensorflag == 2) {
-    unsigned status = bme.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
-    if (!status) {
+    //unsigned status = ;
+    while (!bme.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID)) {
       Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
                         "try a different address!"));
       Serial.print("SensorID was: 0x"); Serial.println(bme.sensorID(),16);
@@ -555,7 +555,7 @@ void SensFusion::initSensors(){
       Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
       Serial.print("        ID of 0x60 represents a BME 280.\n");
       Serial.print("        ID of 0x61 represents a BME 680.\n");
-      while (1) delay(10);
+      delay(500);
     }
     
     baroGround = bme.readAltitude();

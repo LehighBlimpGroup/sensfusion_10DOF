@@ -818,7 +818,7 @@ if __name__ == "__main__":
    # printMat2(mat/mat[0,0],"%10.4f",'Transform Matrix norm1')
    # #==========
 
-   magAccel= np.loadtxt('sensfusion/pythoncode/data10x3.csv', delimiter=',')#manxyz#magAccel400x
+   magAccel= np.loadtxt('magnetic_calibration/data10xspin.csv', delimiter=',')#manxyz#magAccel400x
    mag=magAccel[:,0:3]
    acc=magAccel[:,3:6]
 
