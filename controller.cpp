@@ -63,7 +63,7 @@ void controlOutputs(float ifx, float ify, float ifz, float itx, float ity, float
 
 
 //with signal
-servo1.write((int) (s1*180));
+    servo1.write((int) (s1*180));
     servo2.write((int) ((1-s2)*180));
     am1 = am1 * .98f + m1 * .02f;
     am2 = am2 * .98f + m2 * .02f;
