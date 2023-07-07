@@ -2,7 +2,7 @@
 #define CRAZYFLIE_H
 #include <Arduino.h>
 //imports
-#include <simpleFusion.h> 
+
 //#include <Adafruit_BMP085.h>
 #include <Adafruit_BMP280.h>
 
