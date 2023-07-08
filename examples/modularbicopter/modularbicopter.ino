@@ -44,21 +44,60 @@ init_sensors_t init_sensors = {
   .zGamma = 0,
 };
 
+
+/*
+PD terms for use in the feedback controller 
+- bool roll, pitch, yaw, x, y, z, rotation: 
+          enables that type of feedback (true means feedback is on for that state variable)
+- float Croll, Cpitch, Cyaw, Cx, Cy, Cz, Cabsz: 
+          KP term applied to the controller input
+- float kproll, kdroll, kppitch, kdpitch, kpyaw, kdyaw: 
+- float kpx, kdx, kpy, kdy, kpz, kdz;
+          Kp and kd terms applied to each feedback mechanism using the sensors 
+          (some do not have sensor availibility like x and y)
+- float lx;
+          a control variable used as the arm between the center of mass and the propellers
+*/
+feedback_t feedbackPD = {
+  .roll = false,
+  .pitch = false, 
+  .yaw = true,
+  .x = false,
+  .y = false,
+  .z = true,
+  .rotation = true,
+
+  .Croll = 0,
+  .Cpitch = 0, 
+  .Cyaw = 0,
+  .Cx = 0,
+  .Cy = 0,
+  .Cz = 0,
+  .Cabsz = 0,
+
+  .kproll = 0,
+  .kdroll = 0,
+  .kppitch = 0,
+  .kdpitch = 0,
+  .kpyaw = 0.7f,
+  .kdyaw = 0.1f,
+
+  .kpx = 0,
+  .kdx = 0,
+  .kpy = 0,
+  .kdy = 0,
+  .kpz = 0.4f,
+  .kdz = 0,
+
+  .lx = .15,
+};
+
 //storage variables
 sensors_t sensors;
 controller_t controls;
 //rawInput_t rawInputs;TODO
 actuation_t outputs;
 
-
-//Constants for the custom functions
-float kpz = 0.4f;
-float kdz = 0;
-float kptz = .7;
-float kdtz = 0.1;
-float lx = .15;
-// float kptx = .01;
-// float kdtx = .01;
 
 
 void setup() {
@@ -68,7 +107,7 @@ void setup() {
   } else if (blimpcommand == "Custom"){
     
     //initializes systems based on flags and saves flags into the system
-    blimp.init(init_flags, init_sensors);
+    blimp.init(&init_flags, &init_sensors, &feedbackPD);
 
     //initializes magnetometer with some calibration values
     // these values have an automatic init inside, but it is better to make your own
@@ -99,7 +138,8 @@ void loop() {
 
     /*  
     //    attempts to get the lastest information about the SENSORS and places them into the 
-    //    modSensor_t data structure
+    //    sensor_t data structure
+    //    contains: roll, pitch, yaw, rollrate, pitchrate, yawrate, estimatedZ, velocityZ, groundZ
     //    will return 0 for all sensors if sensors == false
     */
     *sensors = blimp.getLatestSensorData();
@@ -108,6 +148,7 @@ void loop() {
     /*
     //    attempts to get the lastest information about the CONTROLLER and places them into the 
     //    controller_t data structure
+    //    contrains: fx, fy, fz, absz, tx, ty, tz, ready
     */
     *controls = blimp.getControllerData();
 
@@ -119,8 +160,9 @@ void loop() {
 
 
     /*
-    //    adds feedback into the controller terms from the sensors
+    //    adds feedback directly into the controller terms using sensor feedback
     //    replace this with your own custom function for more customization
+    //        example is placed below
     */
     blimp.addFeedback(&controls, &sensors);
     //addFeedback(&controls, &sensors); //this function is implemented here for you to customize
@@ -130,6 +172,8 @@ void loop() {
     //    uses the mode to determine the control scheme for the motor/servo outputs
     //    currently only implementation is for the bicopter blimp
     //    replace this with your own custom function for more customization
+    //    actuation_t data type contains: m1, m2, s1, s2 for each motor and servo
+    //        example is placed below
     */
     *outputs = blimp.getOutputs(&controls);
     //*outputs = getOutputs(&controls); //this function is implemented here for you to customize
@@ -152,27 +196,44 @@ void loop() {
       or just implement it in this program
   -----------------------------------------------------------------------------------------------------
 */
-
 /*
+
 //adds sensor feedback into the control values
+//this set is specifically made for bicopter
 void addFeedback(controller_t *controls, sensor_t sensors) {
+    //controller weights
+    controls->fx *= PDterms->Cx;
+    controls->fy *= PDterms->Cy;
+    controls->fz *= PDterms->Cz;
+    controls->tx *= PDterms->Croll;
+    controls->ty *= PDterms->Cpitch;
+    controls->tz *= PDterms->Cyaw;
+
     //z feedback 
-    controls->fz = (controls->fz  - (sensors->estimatedZ-sensors->groundZ))*kpz 
-                    - (sensors->velocityZ)*kdz + controls->abz;
+    if (PDterms->z) { 
+    controls->fz = (controls->fz   - (sensors->estimatedZ-sensors->groundZ))*PDterms->kpz 
+                    - (sensors->velocityZ)*PDterms->kdz + controls->absz;
+    }
     
     //yaw feedback
-    controls->tz = controls->tz * kptz - sensors->yawrateave*kdtz;
+    if (PDterms->yaw) { 
+      controls->tz = controls->tz * PDterms->kpyaw - sensors->yawrate*PDterms->kdyaw;
+    }
     
     //roll feedback
-    //*tx = *tx - roll* kptx - rollrate *kdtx;
+    if (PDterms->roll) { 
+      controls->tx = controls->tx - sensors->roll* PDterms->kproll - sensors->rollrate * PDterms->kdroll;
+    }
 
-    //roll and pitch state feedback
-    float cosp = (float) cos(sensors->pitch);
-    float sinp = (float) sin(sensors->pitch);
-    float cosr = (float) cos(sensors->roll);
-    float ifx = controls->fx;
-    controls->fx = ifx*cosp + controls->fz*sinp;
-    controls->fz = (ifx*sinp + controls->fz* cosp)/cosr;
+    //roll and pitch rotation state feedback
+    if (PDterms->rotation) { 
+      float cosp = (float) cos(sensors->pitch);
+      float sinp = (float) sin(sensors->pitch);
+      float cosr = (float) cos(sensors->roll);
+      float ifx = controls->fx;
+      controls->fx = ifx*cosp + controls->fz*sinp;
+      controls->fz = (ifx*sinp + controls->fz* cosp)/cosr;
+    }
 }
 
 
@@ -185,17 +246,17 @@ actuation_t getOutputs(controller_t *controls){
     if (controls->ready == false){
       out.s1 = .5f;
       out.s2 = .5f;
-      out.m1 = 0f;
-      out.m2 = 0f;
+      out.m1 = 0;
+      out.m2 = 0;
       return out;
     }
 
     //inputs to the A-Matrix
     float l = lx; //.3
-    float fx = clamp(controls->fx, -1 , 1);//setpoint->bicopter.fx;
-    float fz = clamp(controls->fz, 0 , 2);//setpoint->bicopter.fz;
-    float taux = clamp(controls->tx, -l + (float)0.01 , l - (float) 0.01);
-    float tauz = clamp(controls->tz, -.3 , .3);// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
+    float fx = blimp.clamp(controls->fx, -1 , 1);//setpoint->bicopter.fx;
+    float fz = blimp.clamp(controls->fz, 0 , 2);//setpoint->bicopter.fz;
+    float taux = blimp.clamp(controls->tx, -l + (float)0.01 , l - (float) 0.01);
+    float tauz = blimp.clamp(controls->tz, -.3 , .3);// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
 
 
     //inverse A-Matrix calculations
@@ -223,10 +284,10 @@ actuation_t getOutputs(controller_t *controls){
     }
 
     //converting values to a more stable form
-    out.s1 = clamp(t1, 0, PI)/(PI);// cant handle values between PI and 2PI
-    out.s2 = clamp(t2, 0, PI)/(PI);
-    out.m1 = clamp(f1, 0, 1);
-    out.m2 = clamp(f2, 0, 1);
+    out.s1 = blimp.clamp(t1, 0, PI)/(PI);// cant handle values between PI and 2PI
+    out.s2 = blimp.clamp(t2, 0, PI)/(PI);
+    out.m1 = blimp.clamp(f1, 0, 1);
+    out.m2 = blimp.clamp(f2, 0, 1);
     if (out.m1 < 0.02f ){
       out.s1 = 0.5f; 
     }
@@ -236,15 +297,7 @@ actuation_t getOutputs(controller_t *controls){
     return out;
 }
 
-//helper function to keep values within a certain range
-float clamp(float in, float min, float max){
-  if (in< min){
-    return min;
-  } else if (in > max){
-    return max;
-  } else {
-    return in;
-  }
-}
+
 
 */
+

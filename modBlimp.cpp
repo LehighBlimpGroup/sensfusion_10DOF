@@ -1,6 +1,7 @@
 #include "modBlimp.h"
 
 
+
 ModBlimp::ModBlimp(){ //constructor
 
 
@@ -47,7 +48,54 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
     .zGamma = 0,
     };
 
-    init(&init_flags, &init_sensors);
+    /*
+    PD terms for use in the feedback controller 
+    - bool roll, pitch, yaw, x, y, z, rotation: 
+            enables that type of feedback (true means feedback is on for that state variable)
+    - float Croll, Cpitch, Cyaw, Cx, Cy, Cz, Cabsz: 
+            KP term applied to the controller input
+    - float kproll, kdroll, kppitch, kdpitch, kpyaw, kdyaw: 
+    - float kpx, kdx, kpy, kdy, kpz, kdz;
+            Kp and kd terms applied to each feedback mechanism using the sensors 
+            (some do not have sensor availibility like x and y)
+    - float lx;
+            a control variable used as the arm between the center of mass and the propellers
+    */
+    feedback_t feedbackPD = {
+    .roll = false,
+    .pitch = false, 
+    .yaw = true,
+    .x = false,
+    .y = false,
+    .z = true,
+    .rotation = true,
+
+    .Croll = 0,
+    .Cpitch = 0, 
+    .Cyaw = 0,
+    .Cx = 0,
+    .Cy = 0,
+    .Cz = 0,
+    .Cabsz = 0,
+
+    .kproll = 0,
+    .kdroll = 0,
+    .kppitch = 0,
+    .kdpitch = 0,
+    .kpyaw = 0.7f,
+    .kdyaw = 0.1f,
+
+    .kpx = 0,
+    .kdx = 0,
+    .kpy = 0,
+    .kdy = 0,
+    .kpz = 0.4f,
+    .kdz = 0,
+
+    .lx = .15,
+    };
+
+    init(&init_flags, &init_sensors, &feedbackPD);
 
     //initializes magnetometer with some calibration values
     // these values have an automatic init inside, but it is better to make your own
@@ -58,15 +106,50 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
     };
     float offsets[3] = {20.45f, 64.11f, -67.0f};
     magnetometerCalibration(offsets, transformationMatrix);
-
 }
-void ModBlimp::init(init_flags_t *init_flags, init_sensors_t  *sensors){//sets up the control flags in the system
+
+#define SERVO1 D2
+#define SERVO2 D3
+#define THRUST1 D0
+#define THRUST2 D1
+IBusBM IBus; 
+HardwareSerial MySerial0(0);
+const char * ssid = "AIRLab-BigLab";
+const char * password = "Airlabrocks2022";
+
+void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *sensorsIn, feedback_t *PDtermsIn){//sets up the control flags in the system
     //save flags
     //initialize serial
+  Serial.begin(115200);
+
     //initialize motor + servos
+  pinMode(SERVO1, OUTPUT);
+  pinMode(SERVO2, OUTPUT);
+  pinMode(THRUST1, OUTPUT);
+  pinMode(THRUST2, OUTPUT);
+  ESP32PWM::allocateTimer(0);
+  ESP32PWM::allocateTimer(1);
+  ESP32PWM::allocateTimer(2);
+  ESP32PWM::allocateTimer(3);
+  servo1.setPeriodHertz(50);// Standard 50hz servo
+  servo2.setPeriodHertz(50);// Standard 50hz servo
+  thrust1.setPeriodHertz(51);
+  thrust2.setPeriodHertz(51);
+  servo1.attach(SERVO1, 450, 2550);
+  servo2.attach(SERVO2, 450, 2550);
+  thrust1.attach(THRUST1, 1000, 2000);
+  thrust2.attach(THRUST2, 1000, 2000);
+  escarm(thrust1, thrust2);
+
     //initialize sensors
+  sensorSuite.initSensors();
+  sensorSuite.updateKp(5,-1,0);//5,-1,0.3
+  groundZ = sensorSuite.returnZ();
+
     //initialize UDP
     //initialize IBUS
+  MySerial0.begin(115200, SERIAL_8N1, -1, -1);
+  IBus.begin(MySerial0, IBUSBM_NOTIMER);
 
 }
 void ModBlimp::magnetometerCalibration(float (&offset)[3], float (&matrix)[3][3]){
@@ -78,18 +161,130 @@ void ModBlimp::defaultControl(){ //contains an example of the entire control sta
 
 }
 sensor_t ModBlimp::getLatestSensorData(){
-
+    //interface with Sensorsuite
+    //recieve data and place it into the sensor_t data_type
 }
 controller_t ModBlimp::getControllerData(){
+    //check for which flag for controller is being used
+
+    //access IBUS or UDP to get data
+
+    //place it into controller_t data_type and return it
 
 }
-//TODO rawInput_t getRawInputs();
-void ModBlimp::addFeedback(controller_t *controls, sensor_t *sensors){
 
+//TODO rawInput_t getRawInputs(){}
+
+void ModBlimp::addFeedback(controller_t *controls, sensor_t *sensors) {
+    //controller weights
+    controls->fx *= PDterms->Cx;
+    controls->fy *= PDterms->Cy;
+    controls->fz *= PDterms->Cz;
+    controls->tx *= PDterms->Croll;
+    controls->ty *= PDterms->Cpitch;
+    controls->tz *= PDterms->Cyaw;
+
+    //z feedback 
+    if (PDterms->z) { 
+    controls->fz = (controls->fz - (sensors->estimatedZ-sensors->groundZ))*PDterms->kpz 
+                    - (sensors->velocityZ)*PDterms->kdz + controls->absz;
+    }
+    
+    //yaw feedback
+    if (PDterms->yaw) { 
+      controls->tz = controls->tz * PDterms->kpyaw - sensors->yawrate*PDterms->kdyaw;
+    }
+    
+    //roll feedback
+    if (PDterms->roll) { 
+      controls->tx = controls->tx - sensors->roll* PDterms->kproll - sensors->rollrate * PDterms->kdroll;
+    }
+
+    //roll and pitch rotation state feedback
+    if (PDterms->rotation) { 
+      float cosp = (float) cos(sensors->pitch);
+      float sinp = (float) sin(sensors->pitch);
+      float cosr = (float) cos(sensors->roll);
+      float ifx = controls->fx;
+      controls->fx = ifx*cosp + controls->fz*sinp;
+      controls->fz = (ifx*sinp + controls->fz* cosp)/cosr;
+    }
 }
-void ModBlimp::getOutputs(controller_t *controls){
 
+actuation_t ModBlimp::getOutputs(controller_t *controls){
+    //set up output
+    actuation_t out;
+
+    //set output to default if controls not ready
+    if (controls->ready == false){
+      out.s1 = .5f;
+      out.s2 = .5f;
+      out.m1 = 0;
+      out.m2 = 0;
+      return out;
+    }
+
+    //inputs to the A-Matrix
+    float l = PDterms->lx; //.3
+    float fx = clamp(controls->fx, -1 , 1);//setpoint->bicopter.fx;
+    float fz = clamp(controls->fz, 0 , 2);//setpoint->bicopter.fz;
+    float taux = clamp(controls->tx, -l + (float)0.01 , l - (float) 0.01);
+    float tauz = clamp(controls->tz, -.3 , .3);// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
+
+
+    //inverse A-Matrix calculations
+    float term1 = l*l*fx*fx + l*l*fz*fz + taux*taux + tauz*tauz;
+    float term2 = 2*fz*l*taux - 2*fx*l*tauz;
+    float term3 = sqrt(term1+term2);
+    float term4 = sqrt(term1-term2);
+    float f1 = term3/(2*l); // in unknown units
+    float f2 = term4/(2*l);
+    float t1 = atan2((fz*l - taux)/term3, (fx*l + tauz)/term3 );// in radians
+    float t2 = atan2((fz*l + taux)/term4, (fx*l - tauz)/term4 );
+
+    //checking for full rotations
+    while (t1 < 0) {
+      t1 = t1 + 2 * M_PI_F;
+    }
+    while (t1 > 2*M_PI_F) {
+      t1 = t1 - 2 * M_PI_F;
+    }
+    while (t2 < 0) {
+      t2 = t2 + 2 * M_PI_F;
+    }
+    while (t2 > 2*M_PI_F) {
+      t2 = t2 - 2 * M_PI_F;
+    }
+
+    //converting values to a more stable form
+    out.s1 = clamp(t1, 0, M_PI_F)/(M_PI_F);// cant handle values between PI and 2PI
+    out.s2 = clamp(t2, 0, M_PI_F)/(M_PI_F);
+    out.m1 = clamp(f1, 0, 1);
+    out.m2 = clamp(f2, 0, 1);
+    if (out.m1 < 0.02f ){
+      out.s1 = 0.5f; 
+    }
+    if (out.m2 < 0.02f ){
+      out.s2 = 0.5f; 
+    }
+    return out;
 }
 void ModBlimp::executeOutputs(actuation_t *outputs){
 
+    servo1.write((int) (outputs->s1*180));
+    servo2.write((int) ((1-outputs->s2)*180));
+
+    thrust1.write((int) (outputs->m1*180));
+    thrust2.write((int) (outputs->m2*180));
+
+}
+
+float ModBlimp::clamp(float in, float min, float max){
+  if (in< min){
+    return min;
+  } else if (in > max){
+    return max;
+  } else {
+    return in;
+  }
 }
