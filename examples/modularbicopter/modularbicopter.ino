@@ -4,15 +4,6 @@ ModBlimp blimp;
 
 String blimpcommand = "Automatic"; //"Custom"
 
-init_sensors_t init_sensors = {
-  .acc = 5,
-  .gyro = -1,
-  .mag = 0,
-  .baro = true,
-  .eulerGamma = 1,
-  .rateGamma = .95f,
-  .zGamma = 1,
-};
 
 /*
 flags to be used in the init 
@@ -25,13 +16,36 @@ flags to be used in the init
 init_flags_t init_flags = {
   .verbose = false,
   .sensors = true,
+  .escarm = true,
   .UDP = true,
+  .Ibus = true,
   .mode = 0,
   .control = 0,
 };
 
+
+/*
+sensor values that control the sensors - if you want to turn off sensors use init_flags (sensors = false)
+- float Kacc: kp value in implementation for accelerometer
+- float Kgyro: kp value in implementation for gyroscope
+- float Kmag: kp value in implementation for magnetometer
+- bool baro: enables or disables barometer
+- float eulerGamma: is the weight of the weighted average on euler angles (0 means that it always uses the newest value)
+- float rateGamma: is the weight of the weighted average on gyroscope rates (0 means that it always uses the newest value)
+- float zGamma: is the weight of the weighted average on estimatedZ (0 means that it always uses the newest value)
+*/
+init_sensors_t init_sensors = {
+  .Kacc = 5,
+  .Kgyro = -1,
+  .Kmag = 0,
+  .baro = true,
+  .eulerGamma = 0,
+  .rateGamma = .95f,
+  .zGamma = 0,
+};
+
 //storage variables
-modSensor_t sensors;
+sensors_t sensors;
 controller_t controls;
 //rawInput_t rawInputs;TODO
 actuation_t outputs;
@@ -48,33 +62,24 @@ float lx = .15;
 
 
 void setup() {
-  //sets up flags and initializes
-  //if you do not use blimp.setFlags it uses default settings
-  blimp.setFlags(init_flags);
-  blimp.init();
+  if (blimpcommand == "Automatic"){
+    //initializes all values to default
+    blimp.initDefault(); //contains an example for the initialization
+  } else if (blimpcommand == "Custom"){
+    
+    //initializes systems based on flags and saves flags into the system
+    blimp.init(init_flags, init_sensors);
 
-  // initializes motors and runs esc arm
-  blimp.initMotors();//TODO add the pins here
-
-  //initializes sensors to kp values
-  blimp.initSensors(init_sensors);
-
-  //initializes magnetometer with some calibration values
-  // these values have an automatic init inside, but it is better to make your own
-  float transformationMatrix[3][3] = {
-    {     1.0000f,  -32.2488f,   -0.4705f},
-   {-30.6786f,   -0.2169f,   -5.6020f},
-    {-1.1802f,    0.0597f,   35.5136f}
-  };
-  float offsets[3] = {20.45f, 64.11f, -67.0f};
-  blimp.magnetometerCalibration(offsets, transformationMatrix)
-
-  //initializes controller connections
-  blimp.initController("UDP");
-
-  //initializes Ibus for customization
-  blimp.initIbus();
-
+    //initializes magnetometer with some calibration values
+    // these values have an automatic init inside, but it is better to make your own
+    float transformationMatrix[3][3] = {
+      {     1.0000f,  -32.2488f,   -0.4705f},
+    {-30.6786f,   -0.2169f,   -5.6020f},
+      {-1.1802f,    0.0597f,   35.5136f}
+    };
+    float offsets[3] = {20.45f, 64.11f, -67.0f};
+    blimp.magnetometerCalibration(offsets, transformationMatrix);
+  }
 
 }
 
@@ -87,8 +92,7 @@ void loop() {
   //        Ask Eddie to add any new modules to the internal structure, or follow the notes in modblimp .h and .cpp and README files
   */
   if (blimpcommand == "Automatic"){
-    blimp.updateMotion();
-    blimp.executeMotion();
+    blimp.defaultControl(); //contains an example for the entire stack of control
   }
   //this code is for getting your own ability to customize the inputs and outputs of your program
   else if (blimpcommand == "Custom"){
@@ -141,10 +145,17 @@ void loop() {
   }
 }
 
+/*
+  -----------------------------------------------------------------------------------------------------
+  EXAMPLE FUNCTIONS for full customization on outputs
+  If you want to add a new sensor, you can try to go into firmware (crazyflieComplementary.cpp)
+      or just implement it in this program
+  -----------------------------------------------------------------------------------------------------
+*/
 
-
+/*
 //adds sensor feedback into the control values
-void addFeedback(controller_t *controls, modSensor_t sensors) {
+void addFeedback(controller_t *controls, sensor_t sensors) {
     //z feedback 
     controls->fz = (controls->fz  - (sensors->estimatedZ-sensors->groundZ))*kpz 
                     - (sensors->velocityZ)*kdz + controls->abz;
@@ -236,4 +247,4 @@ float clamp(float in, float min, float max){
   }
 }
 
-
+*/

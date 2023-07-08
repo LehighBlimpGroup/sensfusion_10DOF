@@ -5,9 +5,7 @@ typedef struct sensors_s {
     float roll, pitch, yaw;
     float rollrate, pitchrate, yawrate;
     float estimatedZ, velocityZ, groundZ;
-} sensors_t;
-
-
+} sensor_t;
 
 typedef struct controller_s {
     float fx;
@@ -17,7 +15,7 @@ typedef struct controller_s {
     float tx;
     float ty;
     float tz;
-    float ready;
+    bool ready;
 } controller_t;
 
 typedef struct actuation_s {
