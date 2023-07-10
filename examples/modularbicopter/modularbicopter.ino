@@ -196,8 +196,8 @@ void loop() {
       or just implement it in this program
   -----------------------------------------------------------------------------------------------------
 */
-/*
 
+/*
 //adds sensor feedback into the control values
 //this set is specifically made for bicopter
 void addFeedback(controller_t *controls, sensor_t sensors) {

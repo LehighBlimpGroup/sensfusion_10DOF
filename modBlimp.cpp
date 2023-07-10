@@ -5,6 +5,7 @@
 ModBlimp::ModBlimp(){ //constructor
 
 
+
 }
 
 //initialization functions
@@ -108,52 +109,47 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
     magnetometerCalibration(offsets, transformationMatrix);
 }
 
-#define SERVO1 D2
-#define SERVO2 D3
-#define THRUST1 D0
-#define THRUST2 D1
-IBusBM IBus; 
-HardwareSerial MySerial0(0);
-const char * ssid = "AIRLab-BigLab";
-const char * password = "Airlabrocks2022";
 
 void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *sensorsIn, feedback_t *PDtermsIn){//sets up the control flags in the system
-    //save flags
-    //initialize serial
-  Serial.begin(115200);
+        //save flags
+        //initialize serial
+    Serial.begin(115200);
 
-    //initialize motor + servos
-  pinMode(SERVO1, OUTPUT);
-  pinMode(SERVO2, OUTPUT);
-  pinMode(THRUST1, OUTPUT);
-  pinMode(THRUST2, OUTPUT);
-  ESP32PWM::allocateTimer(0);
-  ESP32PWM::allocateTimer(1);
-  ESP32PWM::allocateTimer(2);
-  ESP32PWM::allocateTimer(3);
-  servo1.setPeriodHertz(50);// Standard 50hz servo
-  servo2.setPeriodHertz(50);// Standard 50hz servo
-  thrust1.setPeriodHertz(51);
-  thrust2.setPeriodHertz(51);
-  servo1.attach(SERVO1, 450, 2550);
-  servo2.attach(SERVO2, 450, 2550);
-  thrust1.attach(THRUST1, 1000, 2000);
-  thrust2.attach(THRUST2, 1000, 2000);
-  escarm(thrust1, thrust2);
+        //initialize motor + servos
+    pinMode(SERVO1, OUTPUT);
+    pinMode(SERVO2, OUTPUT);
+    pinMode(THRUST1, OUTPUT);
+    pinMode(THRUST2, OUTPUT);
+    ESP32PWM::allocateTimer(0);
+    ESP32PWM::allocateTimer(1);
+    ESP32PWM::allocateTimer(2);
+    ESP32PWM::allocateTimer(3);
+    servo1.setPeriodHertz(50);// Standard 50hz servo
+    servo2.setPeriodHertz(50);// Standard 50hz servo
+    thrust1.setPeriodHertz(51);
+    thrust2.setPeriodHertz(51);
+    servo1.attach(SERVO1, 450, 2550);
+    servo2.attach(SERVO2, 450, 2550);
+    thrust1.attach(THRUST1, 1000, 2000);
+    thrust2.attach(THRUST2, 1000, 2000);
+    escarm(thrust1, thrust2);
 
-    //initialize sensors
-  sensorSuite.initSensors();
-  sensorSuite.updateKp(5,-1,0);//5,-1,0.3
-  groundZ = sensorSuite.returnZ();
+        //initialize sensors
+    sensorSuite.initSensors();
+    sensorSuite.updateKp(5,-1,0);//5,-1,0.3
+    groundZ = sensorSuite.returnZ();
 
-    //initialize UDP
-    //initialize IBUS
-  MySerial0.begin(115200, SERIAL_8N1, -1, -1);
-  IBus.begin(MySerial0, IBUSBM_NOTIMER);
+        //initialize UDP
+    UDPCom.init();
+
+
+        //initialize IBUS
+    MySerial0.begin(115200, SERIAL_8N1, -1, -1);
+    IBus.begin(MySerial0, IBUSBM_NOTIMER);
 
 }
 void ModBlimp::magnetometerCalibration(float (&offset)[3], float (&matrix)[3][3]){
-
+  sensorSuite.enterTransform(offset, matrix);
 }
 
 //loop functions

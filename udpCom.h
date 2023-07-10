@@ -1,3 +1,11 @@
 
-void send_udp_feedback()
-void unpack_joystick(float *dat, const unsigned char *buffer) 
+
+#include "WiFi.h"
+#include "AsyncUDP.h"
+#include <data_types.h>
+
+
+class UDPCom {
+    private:
+    public:
+}

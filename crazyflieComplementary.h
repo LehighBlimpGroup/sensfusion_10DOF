@@ -1,4 +1,4 @@
-#ifndef CRAZYFLIE_H
+
 #define CRAZYFLIE_H
 #include <Arduino.h>
 //imports
@@ -139,4 +139,3 @@ class SensFusion {
         float returnVZ();
 };
 
-#endif

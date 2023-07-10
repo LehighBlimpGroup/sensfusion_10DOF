@@ -1,3 +1,37 @@
+
+UDPCom::init(){
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+        Serial.println("WiFi Failed");
+        while(1) {
+        delay(3000);
+        servo1.write((int) 180);
+        servo2.write((int) 0);
+        delay(3000);
+        servo1.write((int) 0);
+        servo2.write((int) 180);
+        }
+    }
+    time_now = millis();
+    if(udp.listen(1333)) {
+        Serial.print("UDP Listening on IP: ");
+        Serial.println(WiFi.localIP());
+
+        // setup callback functions of the udp
+        udp.onPacket([](AsyncUDPPacket packet) {
+            joy_ready = false;
+            time_now = millis();
+            unsigned char *buffer = packet.data();
+            unpack_joystick(joy_data, buffer);
+            joy_ready = true;
+            //reply to the client
+            packet.printf("Got %u bytes of data", packet.length());
+        });
+    }
+}
+
+
 // send udp feedback on roll, pitch, and yaw
 void send_udp_feedback(){ //const unsigned char *buffer
   int num_floats = 4;
@@ -37,37 +71,6 @@ void unpack_joystick(float *dat, const unsigned char *buffer) {
     // }
   }
 }
-
-
-   WiFi.mode(WIFI_STA);
-   WiFi.begin(ssid, password);
-  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    Serial.println("WiFi Failed");
-    while(1) {
-      delay(3000);
-    servo1.write((int) 180);
-    servo2.write((int) 0);
-      delay(3000);
-    servo1.write((int) 0);
-    servo2.write((int) 180);
-    }
-  }
-   if(udp.listen(1444)) {
-     Serial.print("UDP Listening on IP: ");
-     Serial.println(WiFi.localIP());
-
-     // setup callback functions of the udp
-     udp.onPacket([](AsyncUDPPacket packet) {
-       joy_ready = false;
-       time_now = millis();
-       unsigned char *buffer = packet.data();
-       //buff = *buffer;
-       unpack_joystick(joy_data, buffer);
-       joy_ready = true;
-       //reply to the client
-       //packet.printf("Got %u bytes of data", packet.length());
-     });
-   }
 
 
 void getControllerInputs(float *fx, float *fy, float *fz, float *tx, float *ty, float *tz, float *abz){
