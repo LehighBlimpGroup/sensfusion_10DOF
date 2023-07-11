@@ -40,7 +40,7 @@ init_sensors_t init_sensors = {
   .Kmag = 0,
   .baro = true,
   .eulerGamma = 0,
-  .rateGamma = .95f,
+  .rateGamma = .8f,
   .zGamma = 0,
 };
 
@@ -122,7 +122,7 @@ void setup() {
 
 }
 
-
+int countUDP = 0;
 
 void loop() {
   /*
@@ -182,24 +182,30 @@ void loop() {
     blimp.getOutputs(&controls, &outputs);
     //getOutputs(&controls, &outputs); //this function is implemented here for you to customize
     
-    Serial.print("p: ");
-    Serial.print(sensors.pitch);
-    Serial.print(", Z: ");
-    Serial.print(sensors.estimatedZ);
-    Serial.print(", VZ: ");
-    Serial.print(sensors.velocityZ);
-    Serial.print(", Rdy: ");
-    Serial.print(controls.ready);
-    Serial.print(", fzp: ");
-    Serial.print(controls.fz);
-    Serial.print(", m1: ");
-    Serial.print(outputs.m1);
-    Serial.print(", m2: ");
-    Serial.print(outputs.m2);
-    Serial.print(", s1: ");
-    Serial.print(outputs.s1);
-    Serial.print(", s2: ");
-    Serial.println(outputs.s2);
+    // Serial.print("p: ");
+    // Serial.print(sensors.pitch);
+    // Serial.print(", Z: ");
+    // Serial.print(sensors.estimatedZ);
+    // Serial.print(", VZ: ");
+    // Serial.print(sensors.velocityZ);
+    // Serial.print(", Rdy: ");
+    // Serial.print(controls.ready);
+    // Serial.print(", fzp: ");
+    // Serial.print(controls.fz);
+    // Serial.print(", m1: ");
+    // Serial.print(outputs.m1);
+    // Serial.print(", m2: ");
+    // Serial.print(outputs.m2);
+    // Serial.print(", s1: ");
+    // Serial.print(outputs.s1);
+    // Serial.print(", s2: ");
+    // Serial.println(outputs.s2);
+    if (countUDP == 10) {
+      blimp.send_udp_feedback(String(sensors.roll), String(sensors.pitch),
+                              String(sensors.yaw), String(sensors.yawrate));
+      countUDP = 0;
+    }
+    countUDP +=1;
     
 
 

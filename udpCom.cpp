@@ -42,7 +42,7 @@ void UDPCom::init(){
             unpack_joystick(joy_data, buffer);//converts data into joystick 
             joy_ready = true;
             //reply to the client
-            packet.printf("Got %u bytes of data", packet.length());
+            //packet.printf("Got %u bytes of data", packet.length());
         });
     }
 }
@@ -50,24 +50,12 @@ void UDPCom::init(){
 
 // send udp feedback on roll, pitch, and yaw
 // TODO finish this off
-void UDPCom::send_udp_feedback(float dat1, float dat2, float dat3, float dat4){ //const unsigned char *buffer
-  int num_floats = 4;
-  int num_bytes = 4;
-  float dat[4] = {dat1, dat2, dat3, dat4};
-  int i, j;
-  /*
-  for (i = 0; i < num_floats; i++){
-    char temp[4] = {0, 0, 0, 0};
-    for (j = 0; j < num_bytes; j++){
-      temp[j] = buffer[4*i + j];
-    }
-    dat[i] = *((float*) temp);
-  }
-  */
-  // String blimp_feedback = String("");
-  // blimp_feedback = String((float)roll) + String(", ") + String((float)pitch) + String(", ") + String((float)yaw + String(", ") + String((float)yawrate));
+void UDPCom::send_udp_feedback(String dat1, String dat2, String dat3, String dat4){ //const unsigned char *buffer
+
+  String blimp_feedback = String("");
+  blimp_feedback = dat1 + String(", ") + dat2 + String(", ") + dat3 + String(", ") + dat4;
   
-  // udp.broadcastTo(blimp_feedback.c_str(), UDPport);
+  udp.broadcastTo(blimp_feedback.c_str(), UDPport);
 }
 
 

@@ -391,7 +391,9 @@ void ModBlimp::executeOutputs(actuation_t *outputs){
     time_end = millis();
 
 }
-
+void ModBlimp::send_udp_feedback(String dat1, String dat2, String dat3, String dat4){
+    udpSuite.send_udp_feedback(dat1, dat2, dat3, dat4);
+}
 float ModBlimp::clamp(float in, float min, float max){
   if (in< min){
     return min;
