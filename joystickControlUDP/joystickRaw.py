@@ -124,12 +124,14 @@ if __name__ == "__main__":
             #print(round(fx,2), round(fz,2), round(taux,2), round(tauz,2), round(absz,2))
 
             # print()
-            #if state:
-            message = struct.pack('<ffffffff', fx, fy , fz, taux, tauy, tauz, absz, not b_state) 
-            udp_send(sock, UDP_IP, UDP_PORT, message)
+            if state < 40:
+                message = struct.pack('<ffffffff', fx, fy , fz, taux, tauy, tauz, absz, not b_state) 
+                udp_send(sock, UDP_IP, UDP_PORT, message)
                 #print(message)
-            #else:
-            main()#prints out information from drone
+                state += 1
+            else:
+                main()#prints out information from drone
+                state = 0
             
             #state = not state
             time.sleep(0.005) #0.005
