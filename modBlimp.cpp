@@ -110,12 +110,17 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
 }
 
 
-void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *sensorsIn, feedback_t *PDtermsIn){//sets up the control flags in the system
+void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn, feedback_t *feedbackPDIn){//sets up the control flags in the system
         //save flags
+    init_sensors = init_sensorsIn;
+    init_flags = init_flagsIn;
+    PDterms = feedbackPDIn;
+    time_end = millis();
         //initialize serial
     Serial.begin(115200);
 
         //initialize motor + servos
+    Serial.println("Starting Motor Servo Init");
     pinMode(SERVO1, OUTPUT);
     pinMode(SERVO2, OUTPUT);
     pinMode(THRUST1, OUTPUT);
@@ -132,20 +137,28 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *sensorsIn, feed
     servo2.attach(SERVO2, 450, 2550);
     thrust1.attach(THRUST1, 1000, 2000);
     thrust2.attach(THRUST2, 1000, 2000);
-    escarm(thrust1, thrust2);
+    if (init_flags->escarm){
+        escarm(thrust1, thrust2);
+    }
 
         //initialize sensors
-    sensorSuite.initSensors();
-    sensorSuite.updateKp(5,-1,0);//5,-1,0.3
-    groundZ = sensorSuite.returnZ();
+    if (init_flags->sensors){
+        Serial.println("Starting Sensor Init");
+        sensorSuite.initSensors();
+        sensorSuite.updateKp(init_sensors->Kacc,init_sensors->Kgyro,init_sensors->Kmag);//5,-1,0.3
+        groundZ = sensorSuite.returnZ();
+    }
 
         //initialize UDP
-    UDPCom.init();
+    if (init_flags->UDP){
+        Serial.println("Starting UDP Init");
+        udpSuite.init();
+    }
 
 
         //initialize IBUS
-    MySerial0.begin(115200, SERIAL_8N1, -1, -1);
-    IBus.begin(MySerial0, IBUSBM_NOTIMER);
+    // MySerial0.begin(115200, SERIAL_8N1, -1, -1);
+    // IBus.begin(MySerial0, IBUSBM_NOTIMER);
 
 }
 void ModBlimp::magnetometerCalibration(float (&offset)[3], float (&matrix)[3][3]){
@@ -155,23 +168,123 @@ void ModBlimp::magnetometerCalibration(float (&offset)[3], float (&matrix)[3][3]
 //loop functions
 void ModBlimp::defaultControl(){ //contains an example of the entire control stack
 
+
+    /*  
+    //    attempts to get the lastest information about the SENSORS and places them into the 
+    //    sensor_t data structure
+    //    contains: roll, pitch, yaw, rollrate, pitchrate, yawrate, estimatedZ, velocityZ, groundZ
+    //    will return 0 for all sensors if sensors == false
+    */
+    getLatestSensorData(&sensorsEx);
+
+    sensorsEx.pitch = -1* sensorsEx.pitch;//hack to invert pitch due to orientation of the sensor
+    
+
+    /*
+    //    attempts to get the lastest information about the CONTROLLER and places them into the 
+    //    controller_t data structure
+    //    contrains: fx, fy, fz, absz, tx, ty, tz, ready
+    */
+    getControllerData(&controlsEx);
+
+
+    /* TODO- NOT IMPLEMENTED
+    //    optionally you can get the lastest information about the controller as raw values labeled as I1, I2, I3...
+    */
+    //rawInputs = blimp.getRawInputs();
+
+
+    /*
+    //    adds feedback directly into the controller terms using sensor feedback
+    //    replace this with your own custom function for more customization
+    //        example is placed below
+    */
+    addFeedback(&controlsEx, &sensorsEx);
+    
+    
+
+    /*
+    //    uses the mode to determine the control scheme for the motor/servo outputs
+    //    currently only implementation is for the bicopter blimp
+    //    replace this with your own custom function for more customization
+    //    actuation_t data type contains: m1, m2, s1, s2 for each motor and servo
+    //        example is placed below
+    */
+    getOutputs(&controlsEx, &outputsEx);
+    
+
+
+    /*
+    //    uses the mode to determine the ouput scheme for the motor/servo outputs
+    //    currently only implementation is for the bicopter blimp
+    //    outputs should be floats between 0 and 1
+    */
+    executeOutputs(&outputsEx);
+
+
 }
-sensor_t ModBlimp::getLatestSensorData(){
+ void ModBlimp::getLatestSensorData(sensors_t* sensors){
     //interface with Sensorsuite
+    if (init_flags->sensors){
+        sensorSuite.sensfusionLoop(false, 4);
+
+        sensors->roll = sensors->roll*init_sensors->eulerGamma + sensorSuite.getRoll() * (1-init_sensors->eulerGamma);
+        sensors->pitch = sensors->pitch*init_sensors->eulerGamma + sensorSuite.getPitch()* (1-init_sensors->eulerGamma);
+        sensors->yaw = sensors->yaw*init_sensors->eulerGamma + sensorSuite.getYaw()* (1-init_sensors->eulerGamma);
+
+        sensors->rollrate = sensors->rollrate*init_sensors->rateGamma + sensorSuite.getRollRate()*(1-init_sensors->rateGamma);
+        sensors->pitchrate = sensors->pitchrate*init_sensors->rateGamma + sensorSuite.getPitchRate()*(1-init_sensors->rateGamma);
+        sensors->yawrate = sensors->yawrate*init_sensors->rateGamma + sensorSuite.getYawRate()*(1-init_sensors->rateGamma);
+        
+        if (init_sensors->baro) {
+            
+            sensors->estimatedZ = sensors->estimatedZ * init_sensors->zGamma + sensorSuite.returnZ()* (1-init_sensors->zGamma);
+            sensors->velocityZ = sensorSuite.returnVZ(); 
+        } else {
+            sensors->estimatedZ = 0;
+            sensors->velocityZ = 0;
+        }
+        sensors->groundZ = groundZ;
+    }
     //recieve data and place it into the sensor_t data_type
+    return;
+
 }
-controller_t ModBlimp::getControllerData(){
+void ModBlimp::getControllerData(controller_t* controls){
     //check for which flag for controller is being used
-
+    int mode = init_flags->mode;
     //access IBUS or UDP to get data
+    if ( mode == 0 ) { //UDP
+        udpSuite.getControllerInputs(controls);
 
-    //place it into controller_t data_type and return it
+    } else if (mode == 1){ //TODO: IBUS
+        controls->fx = 0;
+        controls->fy = 0;
+        controls->fz = 0;
+        controls->absz = 0;
+        controls->tx = 0;
+        controls->ty = 0;
+        controls->tz = 0;
+        controls->ready = 0;
+    
+
+    } else { //control will be empty if no control input is given
+        controls->fx = 0;
+        controls->fy = 0;
+        controls->fz = 0;
+        controls->absz = 0;
+        controls->tx = 0;
+        controls->ty = 0;
+        controls->tz = 0;
+        controls->ready = 0;
+    }
+    
 
 }
 
 //TODO rawInput_t getRawInputs(){}
 
-void ModBlimp::addFeedback(controller_t *controls, sensor_t *sensors) {
+void ModBlimp::addFeedback(controller_t *controls, sensors_t *sensors) {
     //controller weights
     controls->fx *= PDterms->Cx;
     controls->fy *= PDterms->Cy;
@@ -179,6 +292,7 @@ void ModBlimp::addFeedback(controller_t *controls, sensor_t *sensors) {
     controls->tx *= PDterms->Croll;
     controls->ty *= PDterms->Cpitch;
     controls->tz *= PDterms->Cyaw;
+    controls->absz *= PDterms->Cabsz;
 
     //z feedback 
     if (PDterms->z) { 
@@ -207,17 +321,15 @@ void ModBlimp::addFeedback(controller_t *controls, sensor_t *sensors) {
     }
 }
 
-actuation_t ModBlimp::getOutputs(controller_t *controls){
-    //set up output
-    actuation_t out;
+void ModBlimp::getOutputs(controller_t *controls, actuation_t *out){
 
     //set output to default if controls not ready
     if (controls->ready == false){
-      out.s1 = .5f;
-      out.s2 = .5f;
-      out.m1 = 0;
-      out.m2 = 0;
-      return out;
+      out->s1 = .5f;
+      out->s2 = .5f;
+      out->m1 = 0;
+      out->m2 = 0;
+      return;
     }
 
     //inputs to the A-Matrix
@@ -253,17 +365,16 @@ actuation_t ModBlimp::getOutputs(controller_t *controls){
     }
 
     //converting values to a more stable form
-    out.s1 = clamp(t1, 0, M_PI_F)/(M_PI_F);// cant handle values between PI and 2PI
-    out.s2 = clamp(t2, 0, M_PI_F)/(M_PI_F);
-    out.m1 = clamp(f1, 0, 1);
-    out.m2 = clamp(f2, 0, 1);
-    if (out.m1 < 0.02f ){
-      out.s1 = 0.5f; 
+    out->s1 = clamp(t1, 0, M_PI_F)/(M_PI_F);// cant handle values between PI and 2PI
+    out->s2 = clamp(t2, 0, M_PI_F)/(M_PI_F);
+    out->m1 = clamp(f1, 0, 1);
+    out->m2 = clamp(f2, 0, 1);
+    if (out->m1 < 0.02f ){
+      out->s1 = 0.5f; 
     }
-    if (out.m2 < 0.02f ){
-      out.s2 = 0.5f; 
+    if (out->m2 < 0.02f ){
+      out->s2 = 0.5f; 
     }
-    return out;
 }
 void ModBlimp::executeOutputs(actuation_t *outputs){
 
@@ -272,6 +383,7 @@ void ModBlimp::executeOutputs(actuation_t *outputs){
 
     thrust1.write((int) (outputs->m1*180));
     thrust2.write((int) (outputs->m2*180));
+    time_end = millis();
 
 }
 
@@ -284,3 +396,32 @@ float ModBlimp::clamp(float in, float min, float max){
     return in;
   }
 }
+
+//Enter arming sequence for ESC
+void ModBlimp::escarm(Servo& thrust1, Servo& thrust2){
+  // ESC arming sequence for BLHeli S
+  thrust1.writeMicroseconds(1000);
+  delay(10);
+  thrust2.writeMicroseconds(1000);
+  delay(10);
+
+  // Sweep up
+  for(int i=1100; i<1500; i++) {
+    thrust1.writeMicroseconds(i);
+    delay(5);
+    thrust2.writeMicroseconds(i);
+    delay(5);
+  }
+  // Sweep down
+  for(int i=1500; i<1100; i--) {
+    thrust1.writeMicroseconds(i);
+    delay(5);
+    thrust2.writeMicroseconds(i);
+    delay(5);
+  }
+  // Back to minimum value
+  thrust1.writeMicroseconds(1000);
+  delay(10);
+  thrust2.writeMicroseconds(1000);
+  delay(10);
+} 

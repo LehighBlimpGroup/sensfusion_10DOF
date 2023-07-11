@@ -18,19 +18,32 @@ class ModBlimp;
 class ModBlimp {
     private:
 
-        IBusBM IBus; 
-        HardwareSerial MySerial0(0);
-        const char * ssid = "AIRLab-BigLab";
-        const char * password = "Airlabrocks2022";
+        // IBusBM IBus; 
+        // HardwareSerial MySerial0(0);
         float M_PI_F;
+        Servo servo1;
+        Servo servo2; 
+        Servo thrust1;
+        Servo thrust2;
         
         //flag holders
-        init_sensors_t  *sensors;
+        init_sensors_t  *init_sensors;
         init_flags_t *init_flags;
-        feedback_t *feedbackPD;
+        feedback_t *PDterms;
+
+
+        sensors_t sensorsEx;
+        controller_t controlsEx;
+        //rawInput_t rawInputs;TODO
+        actuation_t outputsEx;
+
+        float groundZ;
         
         SensFusion sensorSuite;
+        UDPCom udpSuite;
 
+        volatile unsigned long time_end;
+        void escarm(Servo& thrust1, Servo& thrust2);
         void initMotors(); //runs the escarm and initializes motors and servos
         void initSensors(init_sensors_t  *sensors); //attempts to connect to the sensors using sensorswuite.
 
@@ -44,12 +57,12 @@ class ModBlimp {
 
         //loop functions
         void defaultControl(); //contains an example of the entire control stack
-        sensor_t getLatestSensorData(); //gets the latest sensor data and returns it in the sensor_t datatype
-        controller_t getControllerData(); //gets the latest controller data and returns it in the controller_t datatype
+        void getLatestSensorData(sensors_t* sensors); //gets the latest sensor data and returns it in the sensor_t datatype
+        void getControllerData(controller_t* controls); //gets the latest controller data and returns it in the controller_t datatype
         //TODO rawInput_t getRawInputs();
-        void addFeedback(controller_t *controls, sensor_t *sensors); //uses the sensor data to add feedback directly into controller_t
-        actuation_t getOutputs(controller_t *controls); //converts control
-        void executeOutputs(actuation_t *outputs);
+        void addFeedback(controller_t *controls, sensors_t *sensors); //uses the sensor data to add feedback directly into controller_t
+        void getOutputs(controller_t *controls, actuation_t* outputs); //converts control
+        void executeOutputs(actuation_t *out);
         float clamp(float in, float min, float max);
 
 

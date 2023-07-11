@@ -16,6 +16,8 @@ SensFusion::SensFusion(){
   TWO_KI_DEF = (2.0f * 0.001f); // 2 * integral gain
   twoKi = TWO_KI_DEF;    // 2 * integral gain (Ki)
 
+  baroOn = false;
+
   vAccDeadband = 0.02f;
   velZAlpha = 0.95f;//0.995f;
 
@@ -129,7 +131,11 @@ void SensFusion::updateSensors(){
     time_t newtime = micros();
     int barotimer = newtime - barotime; 
     if (barotimer > 1/barorate * 1000000) {
-      baroHeight = bme.readAltitude();
+      if (baroOn) {
+        baroHeight = bme.readAltitude();
+      } else {
+        baroHeight = 0;
+      }
       barotime = newtime;
       //baroHeightave = baroHeightave*.95 + baroHeight*.05;
 
@@ -547,19 +553,32 @@ void SensFusion::initSensors(){
     // rate = IMU.accelerationSampleRate();
   } else if (sensorflag == 2) {
     //unsigned status = ;
-    while (!bme.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID)) {
-      Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
-                        "try a different address!"));
-      Serial.print("SensorID was: 0x"); Serial.println(bme.sensorID(),16);
-      Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
-      Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
-      Serial.print("        ID of 0x60 represents a BME 280.\n");
-      Serial.print("        ID of 0x61 represents a BME 680.\n");
-      delay(500);
+    int countTries = 0;
+    baroOn = bme.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
+    while (!baroOn) {
+        delay(100);
+        if (countTries > 10) {
+          Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
+                            "try a different address!"));
+          Serial.print("SensorID was: 0x"); Serial.println(bme.sensorID(),16);
+          Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
+          Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
+          Serial.print("        ID of 0x60 represents a BME 280.\n");
+          Serial.print("        ID of 0x61 represents a BME 680.\n");
+          break;
+        }
+        countTries += 1;
+        baroOn = bme.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
     }
     
-    baroGround = bme.readAltitude();
-    estimatedZ = baroGround;
+    
+    if (baroOn){
+      baroGround = bme.readAltitude();
+      estimatedZ = baroGround;
+    } else {
+      baroGround = 0;
+      estimatedZ = 0;
+    }
     rate = 144;//144
     mySensor.beginAccel();
     mySensor.beginGyro();

@@ -2,7 +2,7 @@
 
 ModBlimp blimp;
 
-String blimpcommand = "Automatic"; //"Custom"
+String blimpcommand = "Custom";//"Automatic"; //"Custom"
 
 
 /*
@@ -16,9 +16,9 @@ flags to be used in the init
 init_flags_t init_flags = {
   .verbose = false,
   .sensors = true,
-  .escarm = true,
+  .escarm = false,
   .UDP = true,
-  .Ibus = true,
+  .Ibus = false,
   .mode = 0,
   .control = 0,
 };
@@ -69,11 +69,11 @@ feedback_t feedbackPD = {
 
   .Croll = 0,
   .Cpitch = 0, 
-  .Cyaw = 0,
-  .Cx = 0,
+  .Cyaw = .6,
+  .Cx = 1,
   .Cy = 0,
   .Cz = 0,
-  .Cabsz = 0,
+  .Cabsz = 1,
 
   .kproll = 0,
   .kdroll = 0,
@@ -91,7 +91,7 @@ feedback_t feedbackPD = {
 
   .lx = .15,
 };
-
+feedback_t * PDterms = &feedbackPD;
 //storage variables
 sensors_t sensors;
 controller_t controls;
@@ -142,15 +142,26 @@ void loop() {
     //    contains: roll, pitch, yaw, rollrate, pitchrate, yawrate, estimatedZ, velocityZ, groundZ
     //    will return 0 for all sensors if sensors == false
     */
-    *sensors = blimp.getLatestSensorData();
-    
+    blimp.getLatestSensorData(&sensors);
+
+    //sensors.pitch = -1* sensors.pitch;//hack to invert pitch due to orientation of the sensor
+    Serial.print("p: ");
+    Serial.print(sensors.pitch);
+    Serial.print(", Z: ");
+    Serial.print(sensors.estimatedZ);
+    Serial.print(", fz: ");
+
 
     /*
     //    attempts to get the lastest information about the CONTROLLER and places them into the 
     //    controller_t data structure
     //    contrains: fx, fy, fz, absz, tx, ty, tz, ready
     */
-    *controls = blimp.getControllerData();
+    blimp.getControllerData(&controls);
+    Serial.print(controls.fz);
+    Serial.print(", Rdy: ");
+    Serial.print(controls.ready);
+    Serial.print(", fzp: ");
 
 
     /* TODO- NOT IMPLEMENTED
@@ -165,6 +176,8 @@ void loop() {
     //        example is placed below
     */
     blimp.addFeedback(&controls, &sensors);
+    Serial.print(controls.fz);
+    Serial.print(", m1: ");
     //addFeedback(&controls, &sensors); //this function is implemented here for you to customize
     
 
@@ -175,8 +188,16 @@ void loop() {
     //    actuation_t data type contains: m1, m2, s1, s2 for each motor and servo
     //        example is placed below
     */
-    *outputs = blimp.getOutputs(&controls);
-    //*outputs = getOutputs(&controls); //this function is implemented here for you to customize
+    //blimp.getOutputs(&controls, &outputs);
+    getOutputs(&controls, &outputs); //this function is implemented here for you to customize
+    Serial.print(outputs.m1);
+    Serial.print(", m2: ");
+    Serial.print(outputs.m2);
+    Serial.print(", s1: ");
+    Serial.print(outputs.s1);
+    Serial.print(", s2: ");
+    Serial.println(outputs.s2);
+    
 
 
     /*
@@ -184,7 +205,9 @@ void loop() {
     //    currently only implementation is for the bicopter blimp
     //    outputs should be floats between 0 and 1
     */
-    blimp.exectuteOutputs(&outputs);
+    //blimp.executeOutputs(&outputs);
+    delay(50);
+    
 
   }
 }
@@ -197,10 +220,10 @@ void loop() {
   -----------------------------------------------------------------------------------------------------
 */
 
-/*
+
 //adds sensor feedback into the control values
 //this set is specifically made for bicopter
-void addFeedback(controller_t *controls, sensor_t sensors) {
+void addFeedback(controller_t *controls, sensors_t *sensors) {
     //controller weights
     controls->fx *= PDterms->Cx;
     controls->fy *= PDterms->Cy;
@@ -238,21 +261,21 @@ void addFeedback(controller_t *controls, sensor_t sensors) {
 
 
 //creates the output values used for actuation from the control values
-actuation_t getOutputs(controller_t *controls){
+void getOutputs(controller_t *controls, actuation_t *out ){
     //set up output
-    actuation_t out;
+    
 
     //set output to default if controls not ready
     if (controls->ready == false){
-      out.s1 = .5f;
-      out.s2 = .5f;
-      out.m1 = 0;
-      out.m2 = 0;
-      return out;
+      out->s1 = .5f;
+      out->s2 = .5f;
+      out->m1 = 0;
+      out->m2 = 0;
+      return;
     }
 
     //inputs to the A-Matrix
-    float l = lx; //.3
+    float l = PDterms->lx; //.3
     float fx = blimp.clamp(controls->fx, -1 , 1);//setpoint->bicopter.fx;
     float fz = blimp.clamp(controls->fz, 0 , 2);//setpoint->bicopter.fz;
     float taux = blimp.clamp(controls->tx, -l + (float)0.01 , l - (float) 0.01);
@@ -284,20 +307,20 @@ actuation_t getOutputs(controller_t *controls){
     }
 
     //converting values to a more stable form
-    out.s1 = blimp.clamp(t1, 0, PI)/(PI);// cant handle values between PI and 2PI
-    out.s2 = blimp.clamp(t2, 0, PI)/(PI);
-    out.m1 = blimp.clamp(f1, 0, 1);
-    out.m2 = blimp.clamp(f2, 0, 1);
-    if (out.m1 < 0.02f ){
-      out.s1 = 0.5f; 
+    out->s1 = blimp.clamp(t1, 0, PI)/(PI);// cant handle values between PI and 2PI
+    out->s2 = blimp.clamp(t2, 0, PI)/(PI);
+    out->m1 = blimp.clamp(f1, 0, 1);
+    out->m2 = blimp.clamp(f2, 0, 1);
+    if (out->m1 < 0.02f ){
+      out->s1 = 0.5f; 
     }
-    if (out.m2 < 0.02f ){
-      out.s2 = 0.5f; 
+    if (out->m2 < 0.02f ){
+      out->s2 = 0.5f; 
     }
-    return out;
+    return;
 }
 
 
 
-*/
+
 

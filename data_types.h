@@ -1,5 +1,7 @@
 
 
+#ifndef __DATA_TYPES_H__
+#define __DATA_TYPES_H__
 
 typedef struct init_sensors_s {
     float Kacc, Kgyro, Kmag;
@@ -8,16 +10,15 @@ typedef struct init_sensors_s {
 } init_sensors_t;
 
 typedef struct init_flags_s {
-    
     bool verbose, sensors, escarm, UDP, Ibus;
     int mode, control;
 } init_flags_t;
 
-typedef struct sensor_s {
+typedef struct sensors_s {
     float roll, pitch, yaw;
     float rollrate, pitchrate, yawrate;
     float estimatedZ, velocityZ, groundZ;
-} sensor_t;
+} sensors_t;
 
 typedef struct controller_s {
     float fx;
@@ -45,3 +46,7 @@ typedef struct feedback_s {
     float kpx, kdx, kpy, kdy, kpz, kdz;
     float lx;
 } feedback_t;
+
+
+
+#endif

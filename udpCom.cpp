@@ -1,20 +1,36 @@
 
-UDPCom::init(){
+#include <udpCom.h>
+
+
+volatile bool joy_ready;
+volatile unsigned long time_now;
+float joy_data[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+UDPCom::UDPCom(){
+  joy_ready = false;
+
+}
+
+
+void UDPCom::init(){
+  //following code block connects you to the internet
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     if (WiFi.waitForConnectResult() != WL_CONNECTED) {
         Serial.println("WiFi Failed");
+        //pinMode(LED_BUILTIN, OUTPUT);
         while(1) {
-        delay(3000);
-        servo1.write((int) 180);
-        servo2.write((int) 0);
-        delay(3000);
-        servo1.write((int) 0);
-        servo2.write((int) 180);
+          delay(100);
+          //digitalWrite(LED_BUILTIN, HIGH);
+          delay(100);
+          //digitalWrite(LED_BUILTIN, LOW);
         }
     }
+
+    //following code block determines what happens when a packet
+    //    is recieved through the wifi
     time_now = millis();
-    if(udp.listen(1333)) {
+    if(udp.listen(UDPport)) {
         Serial.print("UDP Listening on IP: ");
         Serial.println(WiFi.localIP());
 
@@ -23,7 +39,7 @@ UDPCom::init(){
             joy_ready = false;
             time_now = millis();
             unsigned char *buffer = packet.data();
-            unpack_joystick(joy_data, buffer);
+            unpack_joystick(joy_data, buffer);//converts data into joystick 
             joy_ready = true;
             //reply to the client
             packet.printf("Got %u bytes of data", packet.length());
@@ -33,10 +49,11 @@ UDPCom::init(){
 
 
 // send udp feedback on roll, pitch, and yaw
-void send_udp_feedback(){ //const unsigned char *buffer
+// TODO finish this off
+void UDPCom::send_udp_feedback(float dat1, float dat2, float dat3, float dat4){ //const unsigned char *buffer
   int num_floats = 4;
   int num_bytes = 4;
-  float dat[4] = {roll, pitch, yaw, yawrate};
+  float dat[4] = {dat1, dat2, dat3, dat4};
   int i, j;
   /*
   for (i = 0; i < num_floats; i++){
@@ -47,12 +64,14 @@ void send_udp_feedback(){ //const unsigned char *buffer
     dat[i] = *((float*) temp);
   }
   */
-  String blimp_feedback = String("");
-  blimp_feedback = String((float)roll) + String(", ") + String((float)pitch) + String(", ") + String((float)yaw + String(", ") + String((float)yawrate));
+  // String blimp_feedback = String("");
+  // blimp_feedback = String((float)roll) + String(", ") + String((float)pitch) + String(", ") + String((float)yaw + String(", ") + String((float)yawrate));
   
-  udp.broadcastTo(blimp_feedback.c_str(), 1444);
+  // udp.broadcastTo(blimp_feedback.c_str(), UDPport);
 }
 
+
+//unpacks the data into joystick data list
 void unpack_joystick(float *dat, const unsigned char *buffer) {
   int num_floats = 8;
   int num_bytes = 4;
@@ -64,23 +83,27 @@ void unpack_joystick(float *dat, const unsigned char *buffer) {
       temp[j] = buffer[4*i + j];
     }
     dat[i] = *((float*) temp);
-    // if(i == 1 || i == 3){
-    //   dat[i] = -*((float*) temp);
-    // } else {
-    //   dat[i] = *((float*) temp);
-    // }
   }
 }
 
 
-void getControllerInputs(float *fx, float *fy, float *fz, float *tx, float *ty, float *tz, float *abz){
-    
-  *fx = joy_data[0];
-  *fy = joy_data[1];
-  *fz = joy_data[2];
-  *tx = joy_data[3];
-  *ty = joy_data[4];
-  *tz = joy_data[5];
-  *abz = joy_data[6];
+//takes saved joystick data and puts it into the interfaceable packet.
+//    also makes sure that the data has been recieved within the last second 
+//    to prevent drone from flying away if losing controller connection
+void UDPCom::getControllerInputs(controller_t *controls){
   
+  if (joy_ready && millis() - time_now < delayMS){
+    controls->fx = joy_data[0];
+    controls->fy = joy_data[1];
+    controls->fz = joy_data[2];
+    controls->tx = joy_data[3];
+    controls->ty = joy_data[4];
+    controls->tz = joy_data[5];
+    controls->absz = joy_data[6];
+    controls->ready = joy_data[7];
+  } else {
+    controls->ready = false;
+  }
+  
+  return;
 }

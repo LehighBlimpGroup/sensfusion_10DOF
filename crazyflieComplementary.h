@@ -81,7 +81,7 @@ class SensFusion {
         float offsets[3];
 
 
-
+        bool baroOn;
 
 
         //outputs
