@@ -16,7 +16,7 @@ flags to be used in the init
 init_flags_t init_flags = {
   .verbose = false,
   .sensors = true,
-  .escarm = false,
+  .escarm = true,
   .UDP = true,
   .Ibus = false,
   .mode = 0,
@@ -80,7 +80,7 @@ feedback_t feedbackPD = {
   .kppitch = 0,
   .kdpitch = 0,
   .kpyaw = 0,
-  .kdyaw = 0.1f,
+  .kdyaw = 0.07f,
 
   .kpx = 0,
   .kdx = 0,
@@ -144,12 +144,9 @@ void loop() {
     */
     blimp.getLatestSensorData(&sensors);
 
-    //sensors.pitch = -1* sensors.pitch;//hack to invert pitch due to orientation of the sensor
-    // Serial.print("p: ");
-    // Serial.print(sensors.pitch);
-    // Serial.print(", Z: ");
-    // Serial.print(sensors.estimatedZ);
-    // Serial.print(", fz: ");
+    sensors.pitch = -1* sensors.pitch - .15;//hack to invert pitch due to orientation of the sensor
+    
+    
 
 
     /*
@@ -158,10 +155,6 @@ void loop() {
     //    contrains: fx, fy, fz, absz, tx, ty, tz, ready
     */
     blimp.getControllerData(&controls);
-    // Serial.print(controls.fz);
-    // Serial.print(", Rdy: ");
-    // Serial.print(controls.ready);
-    // Serial.print(", fzp: ");
 
 
     /* TODO- NOT IMPLEMENTED
@@ -176,8 +169,6 @@ void loop() {
     //        example is placed below
     */
     blimp.addFeedback(&controls, &sensors);
-    // Serial.print(controls.fz);
-    // Serial.print(", m1: ");
     //addFeedback(&controls, &sensors); //this function is implemented here for you to customize
     
 
@@ -188,15 +179,27 @@ void loop() {
     //    actuation_t data type contains: m1, m2, s1, s2 for each motor and servo
     //        example is placed below
     */
-    //blimp.getOutputs(&controls, &outputs);
-    getOutputs(&controls, &outputs); //this function is implemented here for you to customize
-    // Serial.print(outputs.m1);
-    // Serial.print(", m2: ");
-    // Serial.print(outputs.m2);
-    // Serial.print(", s1: ");
-    // Serial.print(outputs.s1);
-    // Serial.print(", s2: ");
-    // Serial.println(outputs.s2);
+    blimp.getOutputs(&controls, &outputs);
+    //getOutputs(&controls, &outputs); //this function is implemented here for you to customize
+    
+    Serial.print("p: ");
+    Serial.print(sensors.pitch);
+    Serial.print(", Z: ");
+    Serial.print(sensors.estimatedZ);
+    Serial.print(", VZ: ");
+    Serial.print(sensors.velocityZ);
+    Serial.print(", Rdy: ");
+    Serial.print(controls.ready);
+    Serial.print(", fzp: ");
+    Serial.print(controls.fz);
+    Serial.print(", m1: ");
+    Serial.print(outputs.m1);
+    Serial.print(", m2: ");
+    Serial.print(outputs.m2);
+    Serial.print(", s1: ");
+    Serial.print(outputs.s1);
+    Serial.print(", s2: ");
+    Serial.println(outputs.s2);
     
 
 

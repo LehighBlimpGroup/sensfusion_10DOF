@@ -131,8 +131,8 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
     ESP32PWM::allocateTimer(3);
     servo1.setPeriodHertz(50);// Standard 50hz servo
     servo2.setPeriodHertz(50);// Standard 50hz servo
-    thrust1.setPeriodHertz(51);
-    thrust2.setPeriodHertz(51);
+    thrust1.setPeriodHertz(55);
+    thrust2.setPeriodHertz(55);
     servo1.attach(SERVO1, 450, 2550);
     servo2.attach(SERVO2, 450, 2550);
     thrust1.attach(THRUST1, 1000, 2000);
@@ -302,7 +302,7 @@ void ModBlimp::addFeedback(controller_t *controls, sensors_t *sensors) {
     
     //yaw feedback
     if (PDterms->yaw) { 
-      controls->tz = controls->tz * PDterms->kpyaw - sensors->yawrate*PDterms->kdyaw;
+      controls->tz = controls->tz - sensors->yawrate*PDterms->kdyaw;
     }
     
     //roll feedback
@@ -322,6 +322,9 @@ void ModBlimp::addFeedback(controller_t *controls, sensors_t *sensors) {
 }
 
 void ModBlimp::getOutputs(controller_t *controls, actuation_t *out){
+
+    //set up output
+    
 
     //set output to default if controls not ready
     if (controls->ready == false){
@@ -352,21 +355,21 @@ void ModBlimp::getOutputs(controller_t *controls, actuation_t *out){
 
     //checking for full rotations
     while (t1 < 0) {
-      t1 = t1 + 2 * M_PI_F;
+      t1 = t1 + 2 * PI;
     }
-    while (t1 > 2*M_PI_F) {
-      t1 = t1 - 2 * M_PI_F;
+    while (t1 > 2*PI) {
+      t1 = t1 - 2 * PI;
     }
     while (t2 < 0) {
-      t2 = t2 + 2 * M_PI_F;
+      t2 = t2 + 2 * PI;
     }
-    while (t2 > 2*M_PI_F) {
-      t2 = t2 - 2 * M_PI_F;
+    while (t2 > 2*PI) {
+      t2 = t2 - 2 * PI;
     }
 
     //converting values to a more stable form
-    out->s1 = clamp(t1, 0, M_PI_F)/(M_PI_F);// cant handle values between PI and 2PI
-    out->s2 = clamp(t2, 0, M_PI_F)/(M_PI_F);
+    out->s1 = clamp(t1, 0, PI)/(PI);// cant handle values between PI and 2PI
+    out->s2 = clamp(t2, 0, PI)/(PI);
     out->m1 = clamp(f1, 0, 1);
     out->m2 = clamp(f2, 0, 1);
     if (out->m1 < 0.02f ){
@@ -375,14 +378,16 @@ void ModBlimp::getOutputs(controller_t *controls, actuation_t *out){
     if (out->m2 < 0.02f ){
       out->s2 = 0.5f; 
     }
+    return;
 }
 void ModBlimp::executeOutputs(actuation_t *outputs){
 
     servo1.write((int) (outputs->s1*180));
     servo2.write((int) ((1-outputs->s2)*180));
-
-    thrust1.write((int) (outputs->m1*180));
-    thrust2.write((int) (outputs->m2*180));
+    
+    thrust1.writeMicroseconds((int) ((outputs->m1)*1000+1000));
+    thrust2.writeMicroseconds((int) ((outputs->m1)*1000+1000));
+    
     time_end = millis();
 
 }
@@ -413,7 +418,7 @@ void ModBlimp::escarm(Servo& thrust1, Servo& thrust2){
     delay(5);
   }
   // Sweep down
-  for(int i=1500; i<1100; i--) {
+  for(int i=1500; i>1100; i--) {
     thrust1.writeMicroseconds(i);
     delay(5);
     thrust2.writeMicroseconds(i);
