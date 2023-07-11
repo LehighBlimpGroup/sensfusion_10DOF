@@ -69,7 +69,7 @@ feedback_t feedbackPD = {
 
   .Croll = 0,
   .Cpitch = 0, 
-  .Cyaw = .6,
+  .Cyaw = .4,
   .Cx = 1,
   .Cy = 0,
   .Cz = 0,
@@ -79,7 +79,7 @@ feedback_t feedbackPD = {
   .kdroll = 0,
   .kppitch = 0,
   .kdpitch = 0,
-  .kpyaw = 0.7f,
+  .kpyaw = 0,
   .kdyaw = 0.1f,
 
   .kpx = 0,
@@ -145,11 +145,11 @@ void loop() {
     blimp.getLatestSensorData(&sensors);
 
     //sensors.pitch = -1* sensors.pitch;//hack to invert pitch due to orientation of the sensor
-    Serial.print("p: ");
-    Serial.print(sensors.pitch);
-    Serial.print(", Z: ");
-    Serial.print(sensors.estimatedZ);
-    Serial.print(", fz: ");
+    // Serial.print("p: ");
+    // Serial.print(sensors.pitch);
+    // Serial.print(", Z: ");
+    // Serial.print(sensors.estimatedZ);
+    // Serial.print(", fz: ");
 
 
     /*
@@ -158,10 +158,10 @@ void loop() {
     //    contrains: fx, fy, fz, absz, tx, ty, tz, ready
     */
     blimp.getControllerData(&controls);
-    Serial.print(controls.fz);
-    Serial.print(", Rdy: ");
-    Serial.print(controls.ready);
-    Serial.print(", fzp: ");
+    // Serial.print(controls.fz);
+    // Serial.print(", Rdy: ");
+    // Serial.print(controls.ready);
+    // Serial.print(", fzp: ");
 
 
     /* TODO- NOT IMPLEMENTED
@@ -176,8 +176,8 @@ void loop() {
     //        example is placed below
     */
     blimp.addFeedback(&controls, &sensors);
-    Serial.print(controls.fz);
-    Serial.print(", m1: ");
+    // Serial.print(controls.fz);
+    // Serial.print(", m1: ");
     //addFeedback(&controls, &sensors); //this function is implemented here for you to customize
     
 
@@ -190,13 +190,13 @@ void loop() {
     */
     //blimp.getOutputs(&controls, &outputs);
     getOutputs(&controls, &outputs); //this function is implemented here for you to customize
-    Serial.print(outputs.m1);
-    Serial.print(", m2: ");
-    Serial.print(outputs.m2);
-    Serial.print(", s1: ");
-    Serial.print(outputs.s1);
-    Serial.print(", s2: ");
-    Serial.println(outputs.s2);
+    // Serial.print(outputs.m1);
+    // Serial.print(", m2: ");
+    // Serial.print(outputs.m2);
+    // Serial.print(", s1: ");
+    // Serial.print(outputs.s1);
+    // Serial.print(", s2: ");
+    // Serial.println(outputs.s2);
     
 
 
@@ -205,8 +205,8 @@ void loop() {
     //    currently only implementation is for the bicopter blimp
     //    outputs should be floats between 0 and 1
     */
-    //blimp.executeOutputs(&outputs);
-    delay(50);
+    blimp.executeOutputs(&outputs);
+    delay(20);
     
 
   }
