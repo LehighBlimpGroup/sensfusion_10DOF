@@ -50,7 +50,7 @@ SensFusion::SensFusion(){
   // Calibration variables //-1.53,14.27,-14.04
   bx = 1;//cos(magneticInclincation* M_PI_f /180.0f);
   bz = 0;//sin(magneticInclincation* M_PI_f /180.0f);
-  magInc = -11.0f; //magnetic inclination of bethlehem
+  magInc = 0.0f;//-70.0f; //magnetic inclination of bethlehem
 
 
   //outputs
@@ -522,8 +522,8 @@ void SensFusion::initSensors(){
   oldtime  = micros();
   barotime = micros();
   //magneticInclincation = -11.0f;
-  bx = cos(magInc * M_PI_F /180.0f);
-  bz = sin(magInc * M_PI_F /180.0f);
+  bx = 0;//cos(magInc * M_PI_F /180.0f);
+  bz = 1;//sin(magInc * M_PI_F /180.0f);
   // #ifdef _ESP32_HAL_I2C_H_ // For ESP32
   //   Wire.begin(4, 5);//da, cl
   //   mySensor.setWire(&Wire);
