@@ -19,5 +19,7 @@ class UDPCom {
         void init();
         void send_udp_feedback(String dat1, String dat2, String dat3, String dat4);
         void getControllerInputs(controller_t *controls);
-        void send_udp_feedback(float dat1, float dat2, float dat3, float dat4);
+        void send_udp_feedback(String dat1, String dat2, String dat3, String dat4);
+        void send_mag_acc(String dat1, String dat2, String dat3, String dat4, String dat5, String dat6){ //const unsigned char *buffer
+
 };

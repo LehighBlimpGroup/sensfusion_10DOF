@@ -270,6 +270,7 @@ void ModBlimp::getControllerData(controller_t* controls){
         controls->ty = 0;
         controls->tz = ((float)IBus.readChannel(0)-(float)1500)/(float)500;
         controls->ready = (bool)(IBus.readChannel(4)>1500);
+        controls->flag = 0;
     
 
     } else { //control will be empty if no control input is given
@@ -281,6 +282,7 @@ void ModBlimp::getControllerData(controller_t* controls){
         controls->ty = 0;
         controls->tz = 0;
         controls->ready = 0;
+        controls->flag = 0;
     }
     
 

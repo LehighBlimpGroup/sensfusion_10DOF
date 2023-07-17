@@ -4,7 +4,7 @@
 
 volatile bool joy_ready;
 volatile unsigned long time_now;
-float joy_data[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+float joy_data[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
 UDPCom::UDPCom(){
   joy_ready = false;
@@ -49,7 +49,6 @@ void UDPCom::init(){
 
 
 // send udp feedback on roll, pitch, and yaw
-// TODO finish this off
 void UDPCom::send_udp_feedback(String dat1, String dat2, String dat3, String dat4){ //const unsigned char *buffer
 
   String blimp_feedback = String("");
@@ -58,10 +57,20 @@ void UDPCom::send_udp_feedback(String dat1, String dat2, String dat3, String dat
   udp.broadcastTo(blimp_feedback.c_str(), UDPport);
 }
 
+// send udp feedback on roll, pitch, and yaw
+void UDPCom::send_mag_acc(String dat1, String dat2, String dat3, String dat4, String dat5, String dat6){ //const unsigned char *buffer
+
+  String blimp_feedback = String("");
+  blimp_feedback = dat1 + String(", ") + dat2 + String(", ") + dat3 + 
+                  String(", ") + dat4+ String(", ") + dat5 + String(", ") + dat6;
+  
+  udp.broadcastTo(blimp_feedback.c_str(), UDPport);
+}
+
 
 //unpacks the data into joystick data list
 void unpack_joystick(float *dat, const unsigned char *buffer) {
-  int num_floats = 8;
+  int num_floats = 9;
   int num_bytes = 4;
   int i, j;
 
@@ -81,6 +90,7 @@ void unpack_joystick(float *dat, const unsigned char *buffer) {
 void UDPCom::getControllerInputs(controller_t *controls){
   
   if (joy_ready && millis() - time_now < delayMS){
+    controls->flag = joy_data[8];
     controls->fx = joy_data[0];
     controls->fy = joy_data[1];
     controls->fz = joy_data[2];
@@ -88,7 +98,7 @@ void UDPCom::getControllerInputs(controller_t *controls){
     controls->ty = joy_data[4];
     controls->tz = joy_data[5];
     controls->absz = joy_data[6];
-    controls->ready = joy_data[7];
+    controls->ready = joy_data[7] != 0;
   } else {
     controls->ready = false;
   }
