@@ -157,8 +157,10 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
 
 
         //initialize IBUS
-    // MySerial0.begin(115200, SERIAL_8N1, -1, -1);
-    // IBus.begin(MySerial0, IBUSBM_NOTIMER);
+    if (init_flags->Ibus){
+        MySerial0.begin(115200, SERIAL_8N1, -1, -1);
+        IBus.begin(MySerial0, IBUSBM_NOTIMER);
+    }
 
 }
 void ModBlimp::magnetometerCalibration(float (&offset)[3], float (&matrix)[3][3]){
@@ -258,14 +260,16 @@ void ModBlimp::getControllerData(controller_t* controls){
         udpSuite.getControllerInputs(controls);
 
     } else if (mode == 1){ //TODO: IBUS
-        controls->fx = 0;
+        IBus.loop();
+        controls->fx = ((float)IBus.readChannel(1)-(float)1500)/(float)500 + 
+                                ((float)IBus.readChannel(5)-(float)1500)/(float)500;
         controls->fy = 0;
-        controls->fz = 0;
+        controls->fz = ((float)IBus.readChannel(2)-(float)1000)/(float)500;
         controls->absz = 0;
-        controls->tx = 0;
+        controls->tx = 0;//((float)IBus.readChannel(3)-(float)1000)/(float)1000;
         controls->ty = 0;
-        controls->tz = 0;
-        controls->ready = 0;
+        controls->tz = ((float)IBus.readChannel(0)-(float)1500)/(float)500;
+        controls->ready = (bool)(IBus.readChannel(4)>1500);
     
 
     } else { //control will be empty if no control input is given
