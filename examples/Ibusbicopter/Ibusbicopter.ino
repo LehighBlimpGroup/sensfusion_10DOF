@@ -16,7 +16,7 @@ flags to be used in the init
 */
 init_flags_t init_flags = {
   .verbose = false,
-  .sensors = false,
+  .sensors = true,
   .escarm = true,
   .UDP = false,
   .Ibus = true,
@@ -73,7 +73,7 @@ feedback_t feedbackPD = {
   .Cyaw = -.4,
   .Cx = 1.2,
   .Cy = 0,
-  .Cz = 2,
+  .Cz = 6,
   .Cabsz = 0,
 
   .kproll = 0,
@@ -130,7 +130,7 @@ void loop() {
   */
   blimp.getLatestSensorData(&sensors);
 
-  sensors.pitch = -1* sensors.pitch - .15;//hack to invert pitch due to orientation of the sensor
+  sensors.pitch = -1* sensors.pitch;//hack to invert pitch due to orientation of the sensor
   
   
 
@@ -176,7 +176,7 @@ void loop() {
   //    outputs should be floats between 0 and 1
   */
   blimp.executeOutputs(&outputs);
-  delay(20);
+  delay(10);
     
 
   
