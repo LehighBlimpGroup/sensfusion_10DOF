@@ -15,6 +15,7 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
     -bool verbose: allows some debug print statments
     -bool sensors: enables or disables the sensorsuite package: if false all values will be 0, and sensorReady =false in the sensor 
     -bool UDP: starts up the UDP connection such that other UDP functions will be enabled
+    -int motor_type: determines if you are using brushless or brushed motors: 0 = brushed, 1 = brushless;
     -int mode: sets which controller to listen to: 0 = UDP, 1 = IBUS, -1 = None;
     -int control: sets which type of controller to use: 0 = bicopter, 1 = spinning(TODO), -1 = None;
     */
@@ -24,6 +25,7 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
     .escarm = true,
     .UDP = true,
     .Ibus = true,
+    .motor_type = 0;
     .mode = 0,
     .control = 0,
     };
@@ -123,23 +125,27 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
     Serial.println("Starting Motor Servo Init");
     pinMode(SERVO1, OUTPUT);
     pinMode(SERVO2, OUTPUT);
-    pinMode(THRUST1, OUTPUT);
-    pinMode(THRUST2, OUTPUT);
     ESP32PWM::allocateTimer(0);
     ESP32PWM::allocateTimer(1);
     ESP32PWM::allocateTimer(2);
     ESP32PWM::allocateTimer(3);
     servo1.setPeriodHertz(50);// Standard 50hz servo
     servo2.setPeriodHertz(50);// Standard 50hz servo
-    thrust1.setPeriodHertz(55);
-    thrust2.setPeriodHertz(55);
     servo1.attach(SERVO1, 450, 2550);
     servo2.attach(SERVO2, 450, 2550);
-    thrust1.attach(THRUST1, 1000, 2000);
-    thrust2.attach(THRUST2, 1000, 2000);
-    if (init_flags->escarm){
-        escarm(thrust1, thrust2);
-    }
+    pinMode(THRUST1, OUTPUT);
+    pinMode(THRUST2, OUTPUT);
+    if (init_flags->motor_type == 0){
+        thrust1.attach(THRUST1, 1000, 2000);
+        thrust2.attach(THRUST2, 1000, 2000);
+        thrust1.setPeriodHertz(55);
+        thrust2.setPeriodHertz(55);
+
+        if (init_flags->escarm){
+            escarm(thrust1, thrust2);
+        }
+    } 
+
 
         //initialize sensors
     if (init_flags->sensors){
@@ -390,10 +396,13 @@ void ModBlimp::executeOutputs(actuation_t *outputs){
 
     servo1.write((int) (outputs->s1*180));
     servo2.write((int) ((1-outputs->s2)*180));
-    
-    thrust1.writeMicroseconds((int) ((outputs->m1)*1000+1000));
-    thrust2.writeMicroseconds((int) ((outputs->m1)*1000+1000));
-    
+    if (init_flags->motor_type == 0) {
+        thrust1.writeMicroseconds((int) ((outputs->m1)*1000+1000));
+        thrust2.writeMicroseconds((int) ((outputs->m2)*1000+1000));
+    } else if (init_flags->motor_type == 1){
+        analogWrite(THRUST1, (int) (outputs->m1)*255);
+        analogWrite(THRUST2, (int) (outputs->m2)*255);
+    }
     time_end = millis();
 
 }
