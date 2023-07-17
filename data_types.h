@@ -29,6 +29,7 @@ typedef struct controller_s {
     float ty;
     float tz;
     bool ready;
+    int flag;
 } controller_t;
 
 typedef struct actuation_s {
