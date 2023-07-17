@@ -2,15 +2,15 @@
 
 ModBlimp blimp;
 
-String blimpcommand = "Custom";//"Automatic"; //"Custom"
 
-//This code is a basic framework with IBUS without sensor in mind
+//This code is a basic framework with IBUS in mind
 
 /*
 flags to be used in the init 
 -bool verbose: allows some debug print statments
 -bool sensors: enables or disables the sensorsuite package: if false all values will be 0, and sensorReady =false in the sensor 
 -bool UDP: starts up the UDP connection such that other UDP functions will be enabled
+-int motor_type: determines if you are using brushless or brushed motors: 0 = brushless, 1 = brushed;
 -int mode: sets which controller to listen to: 0 = UDP, 1 = IBUS, -1 = None;
 -int control: sets which type of controller to use: 0 = bicopter, 1 = spinning(TODO), -1 = None;
 */
@@ -20,6 +20,7 @@ init_flags_t init_flags = {
   .escarm = true,
   .UDP = false,
   .Ibus = true,
+  .motor_type = 1,
   .mode = 1,
   .control = 0,
 };
