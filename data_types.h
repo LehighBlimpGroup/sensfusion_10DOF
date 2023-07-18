@@ -37,6 +37,7 @@ typedef struct actuation_s {
     float m2;
     float s1;
     float s2;
+    bool ready;
 } actuation_t;
 
 

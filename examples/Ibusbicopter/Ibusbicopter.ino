@@ -17,7 +17,7 @@ flags to be used in the init
 init_flags_t init_flags = {
   .verbose = false,
   .sensors = false,
-  .escarm = true,
+  .escarm = false,
   .UDP = false,
   .Ibus = true,
   .motor_type = 1,
@@ -74,7 +74,7 @@ feedback_t feedbackPD = {
   .Cyaw = -.4,
   .Cx = 1.2,
   .Cy = 0,
-  .Cz = 6,
+  .Cz = 3,
   .Cabsz = 0,
 
   .kproll = 0,
@@ -108,15 +108,7 @@ void setup() {
   //initializes systems based on flags and saves flags into the system
   blimp.init(&init_flags, &init_sensors, &feedbackPD);
 
-  //initializes magnetometer with some calibration values
-  // these values have an automatic init inside, but it is better to make your own
-  float transformationMatrix[3][3] = {
-    {     1.0000f,  -32.2488f,   -0.4705f},
-  {-30.6786f,   -0.2169f,   -5.6020f},
-    {-1.1802f,    0.0597f,   35.5136f}
-  };
-  float offsets[3] = {20.45f, 64.11f, -67.0f};
-  blimp.magnetometerCalibration(offsets, transformationMatrix);
+
   
 
 }

@@ -111,6 +111,7 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
     magnetometerCalibration(offsets, transformationMatrix);
 }
 
+HardwareSerial MySerial0(0);
 
 void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn, feedback_t *feedbackPDIn){//sets up the control flags in the system
         //save flags
@@ -118,8 +119,18 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
     init_flags = init_flagsIn;
     PDterms = feedbackPDIn;
     time_end = millis();
+
         //initialize serial
     Serial.begin(115200);
+    delay(1000);
+
+        //initialize IBUS
+    if (init_flags->Ibus){
+        Serial.println("Starting IBUS Init");
+        MySerial0.begin(115200, SERIAL_8N1, -1, -1);
+        IBus.begin(MySerial0, IBUSBM_NOTIMER);
+        IBus.loop();
+    }
 
         //initialize motor + servos
     Serial.println("Starting Motor Servo Init");
@@ -162,12 +173,6 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
     }
 
 
-        //initialize IBUS
-    if (init_flags->Ibus){
-        HardwareSerial MySerial0(0);
-        MySerial0.begin(115200, SERIAL_8N1, -1, -1);
-        IBus.begin(MySerial0, IBUSBM_NOTIMER);
-    }
 
 }
 void ModBlimp::magnetometerCalibration(float (&offset)[3], float (&matrix)[3][3]){
@@ -264,11 +269,11 @@ void ModBlimp::getControllerData(controller_t* controls){
     //check for which flag for controller is being used
     int mode = init_flags->mode;
     //access IBUS or UDP to get data
-    if ( mode == 0 ) { //UDP
+    if ( mode == 0  && init_flags->UDP) { //UDP
         udpSuite.getControllerInputs(controls);
         calibrationMode(controls->flag);// runs calibration mode if controls->flag != 0;
 
-    } else if (mode == 1){ //TODO: IBUS
+    } else if (mode == 1 && init_flags->Ibus){ //TODO: IBUS
         IBus.loop();
         controls->fx = ((float)IBus.readChannel(1)-(float)1500)/(float)500 + 
                                 ((float)IBus.readChannel(5)-(float)1500)/(float)500;
@@ -370,9 +375,11 @@ void ModBlimp::getOutputs(controller_t *controls, actuation_t *out){
       out->s2 = .5f;
       out->m1 = 0;
       out->m2 = 0;
+      out->ready = false;
       return;
     }
 
+    out->ready = true;
     //inputs to the A-Matrix
     float l = PDterms->lx; //.3
     float fx = clamp(controls->fx, -1 , 1);//setpoint->bicopter.fx;
@@ -426,8 +433,13 @@ void ModBlimp::executeOutputs(actuation_t *outputs){
         thrust1.writeMicroseconds((int) ((outputs->m1)*1000+1000));
         thrust2.writeMicroseconds((int) ((outputs->m2)*1000+1000));
     } else if (init_flags->motor_type == 1){
-        analogWrite(THRUST1, (int) (outputs->m1)*255);
-        analogWrite(THRUST2, (int) (outputs->m2)*255);
+        if (outputs->ready){
+            analogWrite(THRUST1, (int) (0 + (outputs->m1)*255));
+            analogWrite(THRUST2, (int) (0 + (outputs->m2)*255));
+        } else {
+            analogWrite(THRUST1, (int) 0);
+            analogWrite(THRUST2, (int) 0);
+        }
     }
     time_end = millis();
 
