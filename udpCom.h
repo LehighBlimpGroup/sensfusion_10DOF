@@ -14,6 +14,7 @@ class UDPCom {
         int UDPport = 1333; //TODO check if sending feedback uses a different UDP port
         int delayMS = 1000;
         AsyncUDP udp;
+        bool active = false;
     public:
         UDPCom();
         void init();
