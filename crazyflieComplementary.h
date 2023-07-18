@@ -137,5 +137,7 @@ class SensFusion {
         float getYawRate();
         float returnZ();
         float returnVZ();
+        void prepCalibrationData(float sensor_data[6]);
+        void saveCalibration(float input_data[13]);
 };
 

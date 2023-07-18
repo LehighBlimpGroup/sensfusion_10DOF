@@ -16,7 +16,7 @@ flags to be used in the init
 */
 init_flags_t init_flags = {
   .verbose = false,
-  .sensors = true,
+  .sensors = false,
   .escarm = true,
   .UDP = false,
   .Ibus = true,

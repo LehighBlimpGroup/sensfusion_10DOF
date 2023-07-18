@@ -25,7 +25,7 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
     .escarm = true,
     .UDP = true,
     .Ibus = true,
-    .motor_type = 0;
+    .motor_type = 0,
     .mode = 0,
     .control = 0,
     };
@@ -164,6 +164,7 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
 
         //initialize IBUS
     if (init_flags->Ibus){
+        HardwareSerial MySerial0(0);
         MySerial0.begin(115200, SERIAL_8N1, -1, -1);
         IBus.begin(MySerial0, IBUSBM_NOTIMER);
     }
@@ -258,12 +259,14 @@ void ModBlimp::defaultControl(){ //contains an example of the entire control sta
     return;
 
 }
+
 void ModBlimp::getControllerData(controller_t* controls){
     //check for which flag for controller is being used
     int mode = init_flags->mode;
     //access IBUS or UDP to get data
     if ( mode == 0 ) { //UDP
         udpSuite.getControllerInputs(controls);
+        calibrationMode(controls->flag);// runs calibration mode if controls->flag != 0;
 
     } else if (mode == 1){ //TODO: IBUS
         IBus.loop();
@@ -292,6 +295,27 @@ void ModBlimp::getControllerData(controller_t* controls){
     }
     
 
+}
+
+void ModBlimp::calibrationMode(int flag) {
+    if (flag != 0){
+        float input_data[13] = {(float)flag, 0.0, 0.0, 0.0, 0.0, 
+                                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        float calibration_data[6] = {0.0,0.0,0.0,0.0,0.0,0.0};
+        while (flag != 0) {
+            if (flag==1) { //start sending data
+                sensorSuite.prepCalibrationData(calibration_data);
+                udpSuite.send_mag_acc(calibration_data);
+            } else if (flag == 2) { // recieve calibration command
+                sensorSuite.saveCalibration(input_data);
+                udpSuite.sendAck();
+            }
+            delay(10);
+            udpSuite.getCalibrationInputs(input_data);
+            flag = input_data[0];
+        }
+        //restart system
+    }
 }
 
 //TODO rawInput_t getRawInputs(){}

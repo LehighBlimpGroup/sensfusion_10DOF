@@ -41,6 +41,7 @@ class ModBlimp {
         
         SensFusion sensorSuite;
         UDPCom udpSuite;
+        IBusBM IBus; 
 
         volatile unsigned long time_end;
         void escarm(Servo& thrust1, Servo& thrust2);
@@ -65,7 +66,7 @@ class ModBlimp {
         void executeOutputs(actuation_t *out);
         float clamp(float in, float min, float max);
         void send_udp_feedback(String dat1, String dat2, String dat3, String dat4);
-
+        void calibrationMode(int flag);
 };
 
 #endif

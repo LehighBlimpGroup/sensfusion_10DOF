@@ -665,6 +665,48 @@ void SensFusion::recordData() {
   while(1);
 
 }
+
+//allows you to record data with putty 
+void SensFusion::prepCalibrationData(float sensor_data[6]) {
+  
+  while(!(mySensor.magUpdate() == 0 && mySensor.accelUpdate() == 0)){
+    delay(3);
+  }
+  magx = mySensor.magX();
+  magy = mySensor.magY();
+  magz = mySensor.magZ();
+  accx = mySensor.accelX();
+  accy = mySensor.accelY();
+  accz = mySensor.accelZ();
+  
+
+  //     // calibration data
+  float recipNorm = invSqrt(accx * accx + accy * accy + accz * accz);
+  accx *= recipNorm;
+  accy *= recipNorm;
+  accz *= recipNorm;
+  
+  sensor_data[0] = magx;
+  sensor_data[1] = magy;
+  sensor_data[2] = magz;
+  sensor_data[3] = accx;
+  sensor_data[4] = accy;
+  sensor_data[5] = accz;
+      
+
+}
+
+void SensFusion::saveCalibration(float input_data[13]) {
+
+  float transformationMatrixBackup[3][3] = {
+    {input_data[1],input_data[2],input_data[3]},
+    {input_data[4],input_data[5],input_data[6]},
+    {input_data[7],input_data[8],input_data[9]}
+  };
+  float offsetsBackup[3] = {input_data[10],input_data[11],input_data[12]};
+  enterTransform(offsetsBackup, transformationMatrixBackup);
+}
+
 float SensFusion::getRoll(){
   return roll * M_PI_F/180.0f;
 }  

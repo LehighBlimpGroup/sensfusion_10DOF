@@ -4,7 +4,7 @@
 
 volatile bool joy_ready;
 volatile unsigned long time_now;
-float joy_data[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+float joy_data[13] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
 UDPCom::UDPCom(){
   joy_ready = false;
@@ -57,13 +57,23 @@ void UDPCom::send_udp_feedback(String dat1, String dat2, String dat3, String dat
   udp.broadcastTo(blimp_feedback.c_str(), UDPport);
 }
 
+
 // send udp feedback on roll, pitch, and yaw
-void UDPCom::send_mag_acc(String dat1, String dat2, String dat3, String dat4, String dat5, String dat6){ //const unsigned char *buffer
+void UDPCom::send_mag_acc(float calibration_data[6]){ //const unsigned char *buffer
 
   String blimp_feedback = String("");
-  blimp_feedback = dat1 + String(", ") + dat2 + String(", ") + dat3 + 
-                  String(", ") + dat4+ String(", ") + dat5 + String(", ") + dat6;
+  blimp_feedback = String("1, ") + String(calibration_data[0]) + 
+                  String(", ") + String(calibration_data[1]) + 
+                  String(", ") + String(calibration_data[2]) + 
+                  String(", ") + String(calibration_data[3])+ 
+                  String(", ") + String(calibration_data[4]) + 
+                  String(", ") + String(calibration_data[5]);
   
+  udp.broadcastTo(blimp_feedback.c_str(), UDPport);
+}
+
+void UDPCom::sendAck() {
+  String blimp_feedback = String("3");
   udp.broadcastTo(blimp_feedback.c_str(), UDPport);
 }
 
@@ -103,5 +113,16 @@ void UDPCom::getControllerInputs(controller_t *controls){
     controls->ready = false;
   }
   
+  return;
+}
+
+
+void UDPCom::getCalibrationInputs(float input_data[13]){
+  
+  if (joy_ready && millis() - time_now < delayMS){
+    for (int i; i < 13; i++) {
+      input_data[i] = joy_data[i];
+    }
+  }
   return;
 }
