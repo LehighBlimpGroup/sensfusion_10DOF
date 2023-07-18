@@ -668,30 +668,33 @@ void SensFusion::recordData() {
 
 //allows you to record data with putty 
 void SensFusion::prepCalibrationData(float sensor_data[6]) {
-  
-  while(!(mySensor.magUpdate() == 0 && mySensor.accelUpdate() == 0)){
-    delay(3);
-  }
-  magx = mySensor.magX();
-  magy = mySensor.magY();
-  magz = mySensor.magZ();
-  accx = mySensor.accelX();
-  accy = mySensor.accelY();
-  accz = mySensor.accelZ();
-  
+  while(1){
+    if (mySensor.magUpdate() == 0 && mySensor.accelUpdate() == 0){
+      magx = mySensor.magX();
+      magy = mySensor.magY();
+      magz = mySensor.magZ();
+      accx = mySensor.accelX();
+      accy = mySensor.accelY();
+      accz = mySensor.accelZ();
+      
 
-  //     // calibration data
-  float recipNorm = invSqrt(accx * accx + accy * accy + accz * accz);
-  accx *= recipNorm;
-  accy *= recipNorm;
-  accz *= recipNorm;
-  
-  sensor_data[0] = magx;
-  sensor_data[1] = magy;
-  sensor_data[2] = magz;
-  sensor_data[3] = accx;
-  sensor_data[4] = accy;
-  sensor_data[5] = accz;
+      //     // calibration data
+      float recipNorm = invSqrt(accx * accx + accy * accy + accz * accz);
+      accx *= recipNorm;
+      accy *= recipNorm;
+      accz *= recipNorm;
+      
+      sensor_data[0] = magx;
+      sensor_data[1] = magy;
+      sensor_data[2] = magz;
+      sensor_data[3] = accx;
+      sensor_data[4] = accy;
+      sensor_data[5] = accz;
+      break;
+    } else {
+      delay(10);
+    }
+  }
       
 
 }

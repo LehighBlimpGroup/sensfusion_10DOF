@@ -51,8 +51,10 @@ void UDPCom::init(){
 // send udp feedback on roll, pitch, and yaw
 void UDPCom::send_udp_feedback(String dat1, String dat2, String dat3, String dat4){ //const unsigned char *buffer
 
-  String blimp_feedback = String("");
-  blimp_feedback = dat1 + String(", ") + dat2 + String(", ") + dat3 + String(", ") + dat4;
+  String blimp_feedback = String("0,");
+  blimp_feedback = dat1 + String(",") 
+                  + dat2 + String(",") 
+                  + dat3 + String(",") + dat4;
   
   udp.broadcastTo(blimp_feedback.c_str(), UDPport);
 }
@@ -62,18 +64,18 @@ void UDPCom::send_udp_feedback(String dat1, String dat2, String dat3, String dat
 void UDPCom::send_mag_acc(float calibration_data[6]){ //const unsigned char *buffer
 
   String blimp_feedback = String("");
-  blimp_feedback = String("1, ") + String(calibration_data[0]) + 
-                  String(", ") + String(calibration_data[1]) + 
-                  String(", ") + String(calibration_data[2]) + 
-                  String(", ") + String(calibration_data[3])+ 
-                  String(", ") + String(calibration_data[4]) + 
-                  String(", ") + String(calibration_data[5]);
+  blimp_feedback = String("1,") + String(calibration_data[0]) + 
+                  String(",") + String(calibration_data[1]) + 
+                  String(",") + String(calibration_data[2]) + 
+                  String(",") + String(calibration_data[3])+ 
+                  String(",") + String(calibration_data[4]) + 
+                  String(",") + String(calibration_data[5]);
   
   udp.broadcastTo(blimp_feedback.c_str(), UDPport);
 }
 
 void UDPCom::sendAck() {
-  String blimp_feedback = String("3");
+  String blimp_feedback = String("2,0");
   udp.broadcastTo(blimp_feedback.c_str(), UDPport);
 }
 

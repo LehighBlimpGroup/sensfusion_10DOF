@@ -299,10 +299,12 @@ void ModBlimp::getControllerData(controller_t* controls){
 
 void ModBlimp::calibrationMode(int flag) {
     if (flag != 0){
+        Serial.println("I got to Calibrate!");
         float input_data[13] = {(float)flag, 0.0, 0.0, 0.0, 0.0, 
                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         float calibration_data[6] = {0.0,0.0,0.0,0.0,0.0,0.0};
         while (flag != 0) {
+            
             if (flag==1) { //start sending data
                 sensorSuite.prepCalibrationData(calibration_data);
                 udpSuite.send_mag_acc(calibration_data);
@@ -310,7 +312,7 @@ void ModBlimp::calibrationMode(int flag) {
                 sensorSuite.saveCalibration(input_data);
                 udpSuite.sendAck();
             }
-            delay(10);
+            delay(125);
             udpSuite.getCalibrationInputs(input_data);
             flag = input_data[0];
         }
