@@ -1,20 +1,3 @@
-# Sample calculations of magnetic corrections using iterative techniques
-# Both precision and symmetric solutions are shown
-# No linear algebra libraries are required. Simple matrix inversion routine is included
-# No eigenvalue-eigenvector routines are required
-# Works with Python Version 2.7
-#
-# Copyright 2020, Tom Judd 
-
-import numpy as np
-import sys
-import os
-import matplotlib.pyplot as plt
-import pygame
-import time
-import socket
-import struct
-import math
 
 iterations=7 #global Number of iterations 
 verbose = 0  #global Prints more when verbose=1
