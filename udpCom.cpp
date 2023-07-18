@@ -100,15 +100,15 @@ void unpack_joystick(float *dat, const unsigned char *buffer) {
 void UDPCom::getControllerInputs(controller_t *controls){
   
   if (joy_ready && millis() - time_now < delayMS){
-    controls->flag = joy_data[8];
-    controls->fx = joy_data[0];
-    controls->fy = joy_data[1];
-    controls->fz = joy_data[2];
-    controls->tx = joy_data[3];
-    controls->ty = joy_data[4];
-    controls->tz = joy_data[5];
-    controls->absz = joy_data[6];
-    controls->ready = joy_data[7] != 0;
+    controls->flag = joy_data[0];
+    controls->fx = joy_data[1];
+    controls->fy = joy_data[2];
+    controls->fz = joy_data[3];
+    controls->tx = joy_data[4];
+    controls->ty = joy_data[5];
+    controls->tz = joy_data[6];
+    controls->absz = joy_data[7];
+    controls->ready = joy_data[8] != 0;
   } else {
     controls->ready = false;
   }

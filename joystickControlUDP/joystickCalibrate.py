@@ -56,8 +56,6 @@ def check_data():
         return None
 
 
-values = []
-numvals = 0
 
 def dataMain():
     # Main loop
@@ -68,8 +66,13 @@ def dataMain():
     if line:
         numvals += 1
         split_line = line.split('|')
-        print(split_line)
-        values.append(split_line)
+        if split_line[0] == 1:
+            otherstate = 1
+            print(split_line)
+            values.append(split_line[1:])
+        elif split_line[0] == 2:
+            otherstate = 2
+
     
 
 #####################################################################
@@ -85,6 +88,10 @@ if __name__ == "__main__":
     fx = 0
     state = 0
 
+    values = []
+    numvals = 0
+    otherstate = 0
+    
     time_start = time.time()
     try:
 
@@ -92,21 +99,55 @@ if __name__ == "__main__":
             
             # print()
             
-            message = struct.pack('<fffffffffffff', 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0) 
+            message = struct.pack('<fffffffffffff', 1,0,0,0,0,0,0,0,0,0,0,0,0) 
             udp_send(sock, UDP_IP, UDP_PORT, message)
             #print(message)
             state += 1
         
         
-            dataMain()#prints out information from drone
+            line = check_data()
+            # If there is data split it and print it to console
+            if line:
+                numvals += 1
+                split_line = line.split('|')
+                if split_line[0] == 1:
+                    otherstate = 1
+                    print(split_line)
+                    values.append(split_line[1:])
+                elif split_line[0] == 2:
+                    otherstate = 2#prints out information from drone
             state = 0
             
             #state = not state
             time.sleep(0.005) #0.005
             #while(time.time() - time_start < 0.01):
                 #time.sleep(0.001) #0.005
+
+        while otherstate != 2:
+            message = struct.pack('<fffffffffffff', 2,1,1,1,1,1,1,1,1,1,1,1,1) 
+            udp_send(sock, UDP_IP, UDP_PORT, message)
+            #print(message)
+            state += 1
         
         
+            line = check_data()
+            # If there is data split it and print it to console
+            if line:
+                numvals += 1
+                split_line = line.split('|')
+                if split_line[0] == 1:
+                    otherstate = 1
+                    print(split_line)
+                    values.append(split_line[1:])
+                elif split_line[0] == 2:
+                    otherstate = 2#prints out information from drone
+            state = 0
+            
+            #state = not state
+            time.sleep(0.005) #0.005
+
+        
+
     except KeyboardInterrupt:
         print("The end")
         sys.exit()
