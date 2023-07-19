@@ -125,12 +125,12 @@ if __name__ == "__main__":
 
             # print()
             if state < 40:
-                message = struct.pack('<ffffffff', fx, fy , fz, taux, tauy, tauz, absz, not b_state) 
+                message = struct.pack('<fffffffffffff', 0, fx, fy , fz, taux, tauy, tauz, absz, not b_state,0,0,0,0) 
                 udp_send(sock, UDP_IP, UDP_PORT, message)
                 #print(message)
                 state += 1
             else:
-                main()#prints out information from drone
+                #main()#prints out information from drone
                 state = 0
             
             #state = not state
