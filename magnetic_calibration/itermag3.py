@@ -641,183 +641,7 @@ def plotit360(dataArr,aTitle):
 
 if __name__ == "__main__":
 
-   xyz= np.array( [
-[6.7585,  12.4687,  10.6322],
-[8.1433,  11.8438,  10.5958],
-[8.6387,  10.1855,  10.6127],
-[7.9088,   8.4037,  10.6471],
-[6.4050,   7.6305,  10.6705],
-[4.9783,   8.1582,  10.7178],
-[4.4923,   9.8695,  10.6851],
-[5.2169,  11.6423,  10.6559],
-[6.6942,  11.7483,  12.1768],
-[6.4671,   9.9641,  12.8641],
-[6.4039,   8.2774,  12.2121],
-[6.5194,   8.3513,   9.1169],
-[6.6307,  10.0678,   8.4697],
-[6.6970,  11.7103,   9.0651],
-[7.9516,  10.1011,  12.1489],
-[8.0684,  10.1892,   9.0646],
-[5.1151,   9.9348,   9.1366],
-[5.0583,   9.9015,  12.2513]
-
-]   )
-
-   xyz400 = np.array([
-[   321.13761,  592.68208, -110.92169,   0.00000,   0.00000,  -1.00000 ],
-[   369.57750,  820.62965,  -33.77537,   0.00000,   0.70711,  -0.70711 ],
-[   353.30059,  710.18674,   99.50110,   0.00000,   1.00000,   0.00000 ],
-[   309.06748,  296.01928,  231.44519,   0.00000,   0.70711,   0.70711 ],
-[   239.27049, -177.83822,  273.04763,   0.00000,   0.00000,   1.00000 ],
-[   192.47963, -434.44221,  198.11776,   0.00000,  -0.70711,   0.70711 ],
-[   195.28058, -304.18968,   53.81068,   0.00000,  -1.00000,   0.00000 ],
-[   259.38827,  110.18309,  -76.44162,   0.00000,  -0.70711,  -0.70711 ],
-[   100.92073,  221.00200,  -72.69141,  -0.00000,   0.00000,  -1.00000 ],
-[   -54.46045,  149.99361,   30.56772,  -0.70711,   0.00000,  -0.70711 ],
-[   -21.70442,   92.71619,  170.56060,  -1.00000,   0.00000,   0.00000 ],
-[   187.70107,  115.00077,  253.07234,  -0.70711,   0.00000,   0.70711 ],
-[   454.83761,  180.06335,  238.11447,  -0.00000,   0.00000,   1.00000 ],
-[   619.01148,  266.21554,  129.16750,   0.70711,   0.00000,   0.70711 ],
-[   582.25116,  310.30544,  -10.64292,   1.00000,   0.00000,   0.00000 ],
-[   370.97056,  295.59823,  -93.93400,   0.70711,   0.00000,  -0.70711 ],
-[    18.89031,  429.91097,   42.37785,  -1.00000,   0.00000,  -0.00000 ],
-[   -86.10727,  -54.91491,  100.34645,  -0.70711,  -0.70711,  -0.00000 ],
-[    28.97991, -389.40055,  145.12057,  -0.00000,  -1.00000,  -0.00000 ],
-[   292.69263, -372.17646,  151.21780,   0.70711,  -0.70711,  -0.00000 ],
-[   545.15406,  -42.78629,  117.71466,   1.00000,  -0.00000,  -0.00000 ],
-[   653.36751,  455.18348,   62.37725,   0.70711,   0.70711,  -0.00000 ],
-[   534.53481,  800.83089,   14.29840,   0.00000,   1.00000,  -0.00000 ],
-[   277.36174,  776.81465,    9.01628,  -0.70711,   0.70711,  -0.00000 ],
-[    99.67700,  606.21526,  -21.33528,  -0.50000,   0.50000,  -0.70711 ],
-[   -27.67416, -262.68674,   83.14308,  -0.50000,  -0.50000,  -0.70711 ],
-[   460.00349, -147.02142,   82.40870,   0.50000,  -0.50000,  -0.70711 ],
-[   585.50705,  715.83148,  -18.04456,   0.50000,   0.50000,  -0.70711 ],
-[   244.30505,  248.30528,  236.85131,  -0.50000,   0.50000,   0.70711 ],
-[   201.29068,    7.70060,  265.53074,  -0.50000,  -0.50000,   0.70711 ],
-[   328.19573,   35.07879,  266.39908,   0.50000,  -0.50000,   0.70711 ],
-[   360.17339,  248.83504,  240.78515,   0.50000,   0.50000,   0.70711 ],
-        ])
-
-   magAccel400x=np.array([
-[   44.47,  247.49, -312.31,   0.0000,   0.0000,  -1.0000],
-[   48.33,  446.03, -102.17,   0.0000,   0.7071,  -0.7071],
-[   52.98,  391.72,  175.80,   0.0000,   1.0000,   0.0000],
-[   45.95,  120.61,  352.99,   0.0000,   0.7071,   0.7071],
-[   34.79, -210.67,  326.69,   0.0000,   0.0000,   1.0000],
-[   29.55, -402.91,  112.03,   0.0000,  -0.7071,   0.7071],
-[   28.07, -350.69, -160.51,   0.0000,  -1.0000,   0.0000],
-[   39.46,  -85.62, -341.82,   0.0000,  -0.7071,  -0.7071],
-[ -166.04,   22.71, -302.64,  -0.0000,   0.0000,  -1.0000],
-[ -352.17,   15.41,  -88.25,  -0.7071,   0.0000,  -0.7071],
-[ -308.88,    0.31,  188.51,  -1.0000,   0.0000,   0.0000],
-[  -62.78,    6.96,  356.68,  -0.7071,   0.0000,   0.7071],
-[  243.77,   15.36,  324.14,  -0.0000,   0.0000,   1.0000],
-[  427.44,   27.25,  105.51,   0.7071,   0.0000,   0.7071],
-[  389.16,   33.52, -174.49,   1.0000,   0.0000,   0.0000],
-[  141.61,   33.56, -340.88,   0.7071,   0.0000,  -0.7071],
-[ -302.41,  227.87,    1.93,  -1.0000,   0.0000,  -0.0000],
-[ -351.93, -100.40,   10.62,  -0.7071,  -0.7071,  -0.0000],
-[ -169.24, -361.41,   19.78,  -0.0000,  -1.0000,  -0.0000],
-[  133.51, -399.85,   21.87,   0.7071,  -0.7071,  -0.0000],
-[  381.00, -190.13,   16.78,   1.0000,  -0.0000,  -0.0000],
-[  429.07,  146.07,    7.42,   0.7071,   0.7071,  -0.0000],
-[  250.70,  403.59,   -2.33,   0.0000,   1.0000,  -0.0000],
-[  -54.22,  436.38,   -4.19,  -0.7071,   0.7071,  -0.0000],
-[ -228.17,  315.40,  -96.63,  -0.5000,   0.5000,  -0.7071],
-[ -243.17, -279.36,  -76.87,  -0.5000,  -0.5000,  -0.7071],
-[  311.00, -266.72,  -76.13,   0.5000,  -0.5000,  -0.7071],
-[  323.65,  332.63,  -94.30,   0.5000,   0.5000,  -0.7071],
-[  -29.22,   83.71,  355.76,  -0.5000,   0.5000,   0.7071],
-[  -31.41,  -72.17,  357.86,  -0.5000,  -0.5000,   0.7071],
-[  111.05,  -66.95,  358.39,   0.5000,  -0.5000,   0.7071],
-[  117.51,   86.81,  355.55,   0.5000,   0.5000,   0.7071]
-])  
    
- 
- 
-   #above arrays are used if there is no file specified on the command line
-   
-   magAccel=xyz400
-   
-   
-   
-   cmdlineStuff= getCmdLine(sys.argv,verbose)   
-   
-   (fn,magix,accix,tok)=cmdlineStuff
-   (ok,mag,acc,swingPoints,tcenter,tmatrix)=readFileData(cmdlineStuff)
-   
-   if False:#if ok:
-      printVec(tcenter,'%10.2f','Truth Center ')
-      printMat2(tmatrix,"%10.4f",'Truth Transform Matrix (normalized)')
-      
-      print ('\n============================')
-      print ('Precision calculation on data in file ' + fn )
-      (params,magScale) = ellipsoid_iterate(mag,acc,verbose)
-      ofs=params[0:3]*magScale
-      printVec(ofs,'%10.2f','Calculated center,Precision')
-      
-      mat=np.reshape(params[3:12],(3,3))
-      printMat2(mat/mat[0,0],"%10.4f",'Calculated Transform Matrix, Precision')
-      (errO,errPrecision,errInArr,errOutArrP)=calculateAngleError(mag,params,magScale,swingPoints)
-      
-      print ('\n============================')
-
-      print ('Symmetric calculation on data in file ' + fn )
-      (params9,magScale) = ellipsoid_iterate_symmetric(mag,verbose)
-      (ofs,mat)=param9toOfsMat(params9)
-      ofs=ofs*magScale
-      printVec(ofs,'%10.2f','Calculated center,Symmetric')
-      
-      printMat2(mat/mat[0,0],"%10.4f",'Calculated Transform Matrix, Symmetric')
-      params12=param9toParam12(params9)
-
-      (errO,errSymmetric,errInArr,errOutArrS)=calculateAngleError(mag,params12,magScale,swingPoints)
-      pldata=np.array([errInArr,errOutArrS,errOutArrP])
-
-      s0='UnCalibrated Compass:Red, Symmetric Cal:Blue, Precision Cal:Green\n' 
-      s1='Corresponding RMS errors -- %7.2f   %7.2f   %7.2f' % (errO,errSymmetric,errPrecision)
-      if plotMe: plotit360(pldata,s0+s1)
-    
-
-      print ('\n============================')
-      print ('Degrees error')
-      ss = "\nOriginal : %10.2f"  % (errO)
-      ss1 = "\n\nAfter Calibration :\n\nSymmetric: %10.2f" % (errSymmetric)
-      ss=ss+ss1
-      ss1 = "\nPrecision: %10.2f" % (errPrecision)
-      ss=ss+ss1
-
-      print (ss)
-      exit()
-      
-      
-   #==========   
-   # if not using an input file then use the hard coded arrays.
-   
-   # magAccel=xyz400
-   # mag=magAccel[:,0:3]
-   # acc=magAccel[:,3:6]
-  
-   
-   # #==========
-   # print ('\nPrecision calculation on xyz400 data\n')
-   # (params,magScale) = ellipsoid_iterate(mag,acc,1)
-   # printParams(params)
-   # ofs=params[0:3]*magScale
-   # printVec(ofs,'%10.2f','Offsets ')
-   # mat=np.reshape(params[3:12],(3,3))
-   # printMat2(mat/mat[0,0],"%10.4f",'Transform Matrix norm1')
-   # #=========
-   # # exit()
-   # print( '\nSymmetric calculation on xyz400 data\n')
-
-   # # print magScale
-   # (params9,magScale) = ellipsoid_iterate_symmetric(mag,1)
-   # (ofs,mat)=param9toOfsMat(params9)
-   # printVec(ofs*magScale,'%10.2f','Offsets ')
-   # printMat2(mat/mat[0,0],"%10.4f",'Transform Matrix norm1')
-   # #==========
-
    magAccel= np.loadtxt('libraries/sensfusion/magnetic_calibration/data.csv', delimiter=',')#manxyz#magAccel400x
    mag=magAccel[:,0:3]
    acc=magAccel[:,3:6]
@@ -831,15 +655,21 @@ if __name__ == "__main__":
    printVec(ofs,'%10.2f','Offsets ')
    mat=np.reshape(params[3:12],(3,3))
    printMat2(mat/mat[0,0],"%10.4f",'Transform Matrix norm1')
+   calhold = ""
+   # for x in mat/mat[0,0]:
+   #    for y in x:
+   #       print(y)
+   # for x in ofs:
+   #    print(x)
    #=========
  
-   print ('\nSymmetric calculation on magAccel400x data\n')
+   # print ('\nSymmetric calculation on magAccel400x data\n')
 
-   (params9,magScale) = ellipsoid_iterate_symmetric(mag,1)
-   (ofs,mat)=param9toOfsMat(params9)
-   printVec(ofs*magScale,'%10.2f','Offsets ')
-   printMat2(mat/mat[0,0],"%10.4f",'Transform Matrix norm1')
-   #==========
+   # (params9,magScale) = ellipsoid_iterate_symmetric(mag,1)
+   # (ofs,mat)=param9toOfsMat(params9)
+   # printVec(ofs*magScale,'%10.2f','Offsets ')
+   # printMat2(mat/mat[0,0],"%10.4f",'Transform Matrix norm1')
+   # #==========
 
    exit()
    

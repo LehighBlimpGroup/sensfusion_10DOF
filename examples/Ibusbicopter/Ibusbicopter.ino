@@ -16,7 +16,7 @@ flags to be used in the init
 */
 init_flags_t init_flags = {
   .verbose = false,
-  .sensors = false,
+  .sensors = true,
   .escarm = false,
   .UDP = false,
   .Ibus = true,
@@ -123,7 +123,7 @@ void loop() {
   */
   blimp.getLatestSensorData(&sensors);
 
-  sensors.pitch = -1* sensors.pitch;//hack to invert pitch due to orientation of the sensor
+  //sensors.pitch = -1* sensors.pitch;//hack to invert pitch due to orientation of the sensor
   
   
 

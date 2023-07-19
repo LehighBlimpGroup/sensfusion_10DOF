@@ -52,31 +52,35 @@ void UDPCom::init(){
 // send udp feedback on roll, pitch, and yaw
 void UDPCom::send_udp_feedback(String dat1, String dat2, String dat3, String dat4){ //const unsigned char *buffer
   if (active){
-    String blimp_feedback = String("");
-    blimp_feedback = dat1 + String(", ") + dat2 + String(", ") + dat3 + String(", ") + dat4;
-    
+    String blimp_feedback = String("0,");
+    blimp_feedback = dat1 + String(",") 
+                    + dat2 + String(",") 
+                    + dat3 + String(",") + dat4;
+  
     udp.broadcastTo(blimp_feedback.c_str(), UDPport);
   }
 }
 
+
 // send udp feedback on roll, pitch, and yaw
 void UDPCom::send_mag_acc(float calibration_data[6]){ //const unsigned char *buffer
+
   if (active) {
     String blimp_feedback = String("");
-    blimp_feedback = String("1, ") + String(calibration_data[0]) + 
-                    String(", ") + String(calibration_data[1]) + 
-                    String(", ") + String(calibration_data[2]) + 
-                    String(", ") + String(calibration_data[3])+ 
-                    String(", ") + String(calibration_data[4]) + 
-                    String(", ") + String(calibration_data[5]);
-    
+    blimp_feedback = String("1,") + String(calibration_data[0]) + 
+                    String(",") + String(calibration_data[1]) + 
+                    String(",") + String(calibration_data[2]) + 
+                    String(",") + String(calibration_data[3])+ 
+                    String(",") + String(calibration_data[4]) + 
+                    String(",") + String(calibration_data[5]);
+    Serial.println(blimp_feedback);
     udp.broadcastTo(blimp_feedback.c_str(), UDPport);
   }
 }
 
 void UDPCom::sendAck() {
   if (active) {
-    String blimp_feedback = String("3");
+    String blimp_feedback = String("2,0");
     udp.broadcastTo(blimp_feedback.c_str(), UDPport);
   }
 }
@@ -104,15 +108,15 @@ void unpack_joystick(float *dat, const unsigned char *buffer) {
 void UDPCom::getControllerInputs(controller_t *controls){
   
   if (joy_ready && millis() - time_now < delayMS){
-    controls->flag = joy_data[8];
-    controls->fx = joy_data[0];
-    controls->fy = joy_data[1];
-    controls->fz = joy_data[2];
-    controls->tx = joy_data[3];
-    controls->ty = joy_data[4];
-    controls->tz = joy_data[5];
-    controls->absz = joy_data[6];
-    controls->ready = joy_data[7] != 0;
+    controls->flag = joy_data[0];
+    controls->fx = joy_data[1];
+    controls->fy = joy_data[2];
+    controls->fz = joy_data[3];
+    controls->tx = joy_data[4];
+    controls->ty = joy_data[5];
+    controls->tz = joy_data[6];
+    controls->absz = joy_data[7];
+    controls->ready = joy_data[8] != 0;
   } else {
     controls->ready = false;
   }
