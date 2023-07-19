@@ -13,6 +13,7 @@
 
 #include <TimeLib.h>
 #include <math.h>
+#include <Preferences.h>
 
 // Class declaration and definition
 
@@ -77,6 +78,7 @@ class SensFusion {
         float bz;//sin(magneticInclincation* M_PI_f /180.0f);
         float magInc; //magnetic inclination of bethlehem
 
+        Preferences preferences;
         float transformationMatrix[3][3];
         float offsets[3];
 
@@ -128,7 +130,8 @@ class SensFusion {
         void updateKp(float kpa, float kpg, float kpm);
         void sensfusionLoop(bool verbose, int flag);
         void recordData();
-        void enterTransform(float (&offset)[3], float (&matrix)[3][3]);
+        void enterTransform();
+        void saveTransform(float (&offset)[3], float (&matrix)[3][3]);
         float getRoll();
         float getPitch();
         float getYaw();

@@ -67,13 +67,14 @@ SensFusion::SensFusion(){
 
   min = 0;
   max = 0;
-  float transformationMatrixBackup[3][3] = {
-    {1.0f, 9.693f, 0.6187f},
-    {9.6624f, -0.6822f, 0.3864f},
-    {-0.4155f, 0.6628f, -10.7386f}
-  };
-  float offsetsBackup[3] = {11.98f, 7.01f, 21.77f};
-  enterTransform(offsetsBackup, transformationMatrixBackup);
+  // float transformationMatrixBackup[3][3] = {
+  //   {1.0f, 9.693f, 0.6187f},
+  //   {9.6624f, -0.6822f, 0.3864f},
+  //   {-0.4155f, 0.6628f, -10.7386f}
+  // };
+  // float offsetsBackup[3] = {11.98f, 7.01f, 21.77f};
+  // saveTransform(offsetsBackup, transformationMatrixBackup);
+  enterTransform();
 }
 
 
@@ -592,31 +593,58 @@ void SensFusion::sensfusionLoop(bool verbose, int flag) {
   } 
 }
 void SensFusion::enterTransform(){
-    for (int i = 0; i < 3; i++) {
-        offsets[i] = offset[i];
-        for (int j = 0; j < 3; j++) {
-          transformationMatrix[i][j] = matrix[i][j];
-        }
-    }
-}
-void SensFusion::saveTransform(float (&offset)[3], float (&matrix)[3][3]){
   char* name = new char[3];
   char str[256];
+  preferences.begin("calibration", true); 
   name[2] = (char)'\0';
+  
   name[0] = (char)'m';
-  for (int i = 0; i < 9; i ++) {
-    itoa(i,str,16);
-    name[1] = str[0];
-    Serial.print(preferences.getFloat(name,(float_t)0));// place UDP recieve here to get the values?
-    Serial.print(", ");
+  for (int i = 0; i < 3; i ++) {
+    for (int j = 0; j < 3; j ++) {
+      itoa((int)(i*3 + j),str,16);
+      name[1] = str[0];
+      transformationMatrix[i][j] = (float)preferences.getFloat(name);// place UDP recieve here to get the values?
+      Serial.print(name);
+      Serial.print(": ");
+      Serial.println((float)preferences.getFloat(name));
+    }
   }
   name[0] = (char)'o';
   for (int i = 0; i < 3; i ++) {
     itoa(i,str,16);
     name[1] = str[0];
-    Serial.print(preferences.getFloat(name,(float_t)0));// place UDP recieve here to get the values?
-    Serial.print(", ");
+    offsets[i] = (float)preferences.getFloat(name);// place UDP recieve here to get the values?
+    Serial.print(name);
+    Serial.print(": ");
+    Serial.println((float)preferences.getFloat(name));
   }
+  preferences.end();
+}
+void SensFusion::saveTransform(float (&offset)[3], float (&matrix)[3][3]){
+  char* name = new char[3];
+  char str[256];
+  preferences.begin("calibration", false); 
+  preferences.clear();
+  name[2] = (char)'\0';
+  
+  name[0] = (char)'m';
+  for (int i = 0; i < 3; i ++) {
+    for (int j = 0; j < 3; j ++) {
+      itoa((int)(i*3 + j),str,16);
+      name[1] = str[0];
+      preferences.putFloat(name, (float_t)(matrix[i][j]));// place UDP recieve here to get the values?
+      // Serial.print(name);
+      // Serial.print(": ");
+      // Serial.println((float)preferences.getFloat(name));
+    }
+  }
+  name[0] = (char)'o';
+  for (int i = 0; i < 3; i ++) {
+    itoa(i,str,16);
+    name[1] = str[0];
+    preferences.putFloat(name, (float_t)(offset[i]));// place UDP recieve here to get the values?
+  }
+  preferences.end();
 }
 //allows you to record data with putty 
 void SensFusion::recordData() {
@@ -730,7 +758,8 @@ void SensFusion::saveCalibration(float input_data[13]) {
     {input_data[7],input_data[8],input_data[9]}
   };
   float offsetsBackup[3] = {input_data[10],input_data[11],input_data[12]};
-  enterTransform(offsetsBackup, transformationMatrixBackup);
+  saveTransform(offsetsBackup, transformationMatrixBackup);
+  enterTransform();
 }
 
 float SensFusion::getRoll(){

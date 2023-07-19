@@ -73,7 +73,7 @@ void UDPCom::send_mag_acc(float calibration_data[6]){ //const unsigned char *buf
                     String(",") + String(calibration_data[3])+ 
                     String(",") + String(calibration_data[4]) + 
                     String(",") + String(calibration_data[5]);
-    Serial.println(blimp_feedback);
+    // Serial.println(blimp_feedback);
     udp.broadcastTo(blimp_feedback.c_str(), UDPport);
   }
 }
@@ -88,7 +88,7 @@ void UDPCom::sendAck() {
 
 //unpacks the data into joystick data list
 void unpack_joystick(float *dat, const unsigned char *buffer) {
-  int num_floats = 9;
+  int num_floats = 13;
   int num_bytes = 4;
   int i, j;
 

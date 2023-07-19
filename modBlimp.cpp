@@ -176,7 +176,8 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
 
 }
 void ModBlimp::magnetometerCalibration(float (&offset)[3], float (&matrix)[3][3]){
-  sensorSuite.enterTransform(offset, matrix);
+  sensorSuite.saveTransform(offset, matrix);
+  sensorSuite.enterTransform();
 }
 
 //loop functions
