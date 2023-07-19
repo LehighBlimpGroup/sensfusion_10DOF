@@ -73,7 +73,7 @@ void UDPCom::send_mag_acc(float calibration_data[6]){ //const unsigned char *buf
                     String(",") + String(calibration_data[3])+ 
                     String(",") + String(calibration_data[4]) + 
                     String(",") + String(calibration_data[5]);
-  
+    Serial.println(blimp_feedback);
     udp.broadcastTo(blimp_feedback.c_str(), UDPport);
   }
 }

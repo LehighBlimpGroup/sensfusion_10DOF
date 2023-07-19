@@ -79,44 +79,22 @@ SensFusion::SensFusion(){
 
 
 void SensFusion::updateSensors(){
-  if (sensorflag == 1) {
-    sensorflag = 1;
-    // time_t newtime = micros();
-    // int barotimer = newtime - barotime; 
-    // if (barotimer > 1/barorate * 1000000) {
-    //   baroHeight = bmp.readAltitude();
-    //   barotime = newtime;
-    //   //baroHeightave = baroHeightave*.95 + baroHeight*.05;
-
-    // }
-    
-    // if (IMU.accelerationAvailable()){
-    //   IMU.readAcceleration(accx, accy, accz);
-    // }
-    // if (IMU.gyroscopeAvailable()){
-    //   IMU.readGyroscope(gyrox, gyroy, gyroz);
-    // }
-    // if (IMU.magneticFieldAvailable()) {
-    //   IMU.readMagneticField(magx, magy, magz);
-    //   transform(&magx, &magy, &magz);
-
-    //   // magx  = (magx-xMin)/(xMax-xMin) - 0.5f;
-    //   // magy = (magy-yMin)/(yMax-yMin) - 0.5f;
-    //   // magz = (magz-zMin)/(zMax-zMin) - 0.5f;
-    // }
-  } else if (sensorflag == 2){
 
     if (mySensor.accelUpdate() == 0) {
       accx = mySensor.accelX();
       accy = mySensor.accelY();
       accz = mySensor.accelZ();
       
+    }else{
+    mySensor.beginAccel();
     }
 
     if (mySensor.gyroUpdate() == 0) {
       gyrox = mySensor.gyroX();
       gyroy = mySensor.gyroY();
       gyroz = mySensor.gyroZ();
+    }else{
+    mySensor.beginGyro();
     }
 
     if (mySensor.magUpdate() == 0) {
@@ -125,6 +103,8 @@ void SensFusion::updateSensors(){
       magz = mySensor.magZ();
       transform(&magx, &magy, &magz);
       
+    } else{
+    mySensor.beginMag();
     }
     
 
@@ -133,8 +113,12 @@ void SensFusion::updateSensors(){
     if (barotimer > 1/barorate * 1000000) {
       if (baroOn) {
         baroHeight = bme.readAltitude();
+        if (baroHeight < 1 || baroHeight > 2000){
+          baroOn = bme.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
+        }
       } else {
-        baroHeight = 0;
+        baroOn = bme.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
+
       }
       barotime = newtime;
       //baroHeightave = baroHeightave*.95 + baroHeight*.05;
@@ -142,7 +126,7 @@ void SensFusion::updateSensors(){
     }
     
 
-  }
+  
 }
 
 void SensFusion::transform(float *x, float *y, float *z) {
@@ -525,8 +509,8 @@ void SensFusion::initSensors(){
   bx = 0;//cos(magInc * M_PI_F /180.0f);
   bz = 1;//sin(magInc * M_PI_F /180.0f);
   // #ifdef _ESP32_HAL_I2C_H_ // For ESP32
-  //   Wire.begin(4, 5);//da, cl
-  //   mySensor.setWire(&Wire);
+  // Wire.begin(4, 5);//da, cl
+  // mySensor.setWire(&Wire);
   // #else
   //   Wire.begin();
   //   mySensor.setWire(&Wire);
@@ -628,9 +612,20 @@ void SensFusion::recordData() {
 
     if ( delta > 1/rate * 1000000 && mySensor.magUpdate() == 0 && mySensor.accelUpdate() == 0){
       
+      auto result1 = mySensor.magUpdate();
+      if (result1 != 0) {
+        mySensor.beginMag();
+        result1 = mySensor.magUpdate();
+      }
       magx = mySensor.magX();
       magy = mySensor.magY();
       magz = mySensor.magZ();
+
+      auto result2 = mySensor.accelUpdate();
+      if (result2 != 0) {
+        mySensor.beginAccel();
+        result2 = mySensor.accelUpdate();
+      }
       accx = mySensor.accelX();
       accy = mySensor.accelY();
       accz = mySensor.accelZ();
@@ -668,35 +663,42 @@ void SensFusion::recordData() {
 
 //allows you to record data with putty 
 void SensFusion::prepCalibrationData(float sensor_data[6]) {
-  while(1){
-    if (mySensor.magUpdate() == 0 && mySensor.accelUpdate() == 0){
-      magx = mySensor.magX();
-      magy = mySensor.magY();
-      magz = mySensor.magZ();
-      accx = mySensor.accelX();
-      accy = mySensor.accelY();
-      accz = mySensor.accelZ();
-      
 
-      //     // calibration data
-      float recipNorm = invSqrt(accx * accx + accy * accy + accz * accz);
-      accx *= recipNorm;
-      accy *= recipNorm;
-      accz *= recipNorm;
-      
-      sensor_data[0] = magx;
-      sensor_data[1] = magy;
-      sensor_data[2] = magz;
-      sensor_data[3] = accx;
-      sensor_data[4] = accy;
-      sensor_data[5] = accz;
-      break;
-    } else {
-      delay(10);
-    }
+  auto result1 = mySensor.magUpdate();
+  while (result1 != 0) {
+    mySensor.beginMag();
+    result1 = mySensor.magUpdate();
+    delay(5);
   }
-      
+  auto result2 = mySensor.accelUpdate();
+  while (result2 != 0) {
+    mySensor.beginAccel();
+    result2 = mySensor.accelUpdate();
+    delay(5);
+  }
+  
+  magx = mySensor.magX();
+  magy = mySensor.magY();
+  magz = mySensor.magZ();
+  accx = mySensor.accelX();
+  accy = mySensor.accelY();
+  accz = mySensor.accelZ();
+  
 
+  //     // calibration data
+  float recipNorm = invSqrt(accx * accx + accy * accy + accz * accz);
+  accx *= recipNorm;
+  accy *= recipNorm;
+  accz *= recipNorm;
+  
+  sensor_data[0] = magx;
+  sensor_data[1] = magy;
+  sensor_data[2] = magz;
+  sensor_data[3] = accx;
+  sensor_data[4] = accy;
+  sensor_data[5] = accz;
+
+  
 }
 
 void SensFusion::saveCalibration(float input_data[13]) {
