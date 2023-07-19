@@ -112,9 +112,11 @@ void SensFusion::updateSensors(){
     int barotimer = newtime - barotime; 
     if (barotimer > 1/barorate * 1000000) {
       if (baroOn) {
-        baroHeight = bme.readAltitude();
-        if (baroHeight < 1 || baroHeight > 2000){
+        float newHeight = bme.readAltitude();
+        if (newHeight > 1000 or newHeight < 1){
           baroOn = bme.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
+        } else {
+          baroHeight = newHeight;
         }
       } else {
         baroOn = bme.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
@@ -589,13 +591,32 @@ void SensFusion::sensfusionLoop(bool verbose, int flag) {
     }
   } 
 }
-void SensFusion::enterTransform(float (&offset)[3], float (&matrix)[3][3]){
+void SensFusion::enterTransform(){
     for (int i = 0; i < 3; i++) {
         offsets[i] = offset[i];
         for (int j = 0; j < 3; j++) {
           transformationMatrix[i][j] = matrix[i][j];
         }
     }
+}
+void SensFusion::saveTransform(float (&offset)[3], float (&matrix)[3][3]){
+  char* name = new char[3];
+  char str[256];
+  name[2] = (char)'\0';
+  name[0] = (char)'m';
+  for (int i = 0; i < 9; i ++) {
+    itoa(i,str,16);
+    name[1] = str[0];
+    Serial.print(preferences.getFloat(name,(float_t)0));// place UDP recieve here to get the values?
+    Serial.print(", ");
+  }
+  name[0] = (char)'o';
+  for (int i = 0; i < 3; i ++) {
+    itoa(i,str,16);
+    name[1] = str[0];
+    Serial.print(preferences.getFloat(name,(float_t)0));// place UDP recieve here to get the values?
+    Serial.print(", ");
+  }
 }
 //allows you to record data with putty 
 void SensFusion::recordData() {

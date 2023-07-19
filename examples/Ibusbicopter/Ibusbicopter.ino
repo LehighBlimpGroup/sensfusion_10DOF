@@ -74,7 +74,7 @@ feedback_t feedbackPD = {
   .Cyaw = -.4,
   .Cx = 1.2,
   .Cy = 0,
-  .Cz = 3,
+  .Cz = 6,
   .Cabsz = 0,
 
   .kproll = 0,
