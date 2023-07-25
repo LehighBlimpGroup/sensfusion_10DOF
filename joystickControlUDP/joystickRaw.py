@@ -6,8 +6,8 @@ import struct
 import math
 
 # udp params
-UDP_IP = "192.168.0.2" #192.168.0.05
-UDP_PORT = 1333
+UDP_IP = "192.168.0.39" #192.168.0.05
+UDP_PORT = 1234
 print("UDP target IP: %s" % UDP_IP)
 print("UDP target port: %s" % UDP_PORT)
 
@@ -121,7 +121,7 @@ if __name__ == "__main__":
             # t1 = math.atan2(f1z, f1x)*180/math.pi
             # t2 = math.atan2(f2z, f2x)*180/math.pi
 
-            #print(round(fx,2), round(fz,2), round(taux,2), round(tauz,2), round(absz,2))
+            print(round(fx,2), round(fz,2), round(taux,2), round(tauz,2), round(absz,2), b_state)
 
             # print()
             if state < 40:
