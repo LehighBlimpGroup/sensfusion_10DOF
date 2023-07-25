@@ -50,7 +50,7 @@ SensFusion::SensFusion(){
   // Calibration variables //-1.53,14.27,-14.04
   bx = 1;//cos(magneticInclincation* M_PI_f /180.0f);
   bz = 0;//sin(magneticInclincation* M_PI_f /180.0f);
-  magInc = 0.0f;//-70.0f; //magnetic inclination of bethlehem
+  magInc = -11.0f;//-70.0f; //magnetic inclination of bethlehem
 
 
   //outputs
@@ -509,8 +509,9 @@ void SensFusion::initSensors(){
   oldtime  = micros();
   barotime = micros();
   //magneticInclincation = -11.0f;
-  bx = 0;//cos(magInc * M_PI_F /180.0f);
-  bz = 1;//sin(magInc * M_PI_F /180.0f);
+  magInc = -20;
+  bx = cos(magInc * M_PI_F /180.0f);
+  bz = sin(magInc * M_PI_F /180.0f);
   // #ifdef _ESP32_HAL_I2C_H_ // For ESP32
   // Wire.begin(4, 5);//da, cl
   // mySensor.setWire(&Wire);
@@ -633,9 +634,9 @@ void SensFusion::saveTransform(float (&offset)[3], float (&matrix)[3][3]){
       itoa((int)(i*3 + j),str,16);
       name[1] = str[0];
       preferences.putFloat(name, (float_t)(matrix[i][j]));// place UDP recieve here to get the values?
-      // Serial.print(name);
-      // Serial.print(": ");
-      // Serial.println((float)preferences.getFloat(name));
+      Serial.print(name);
+      Serial.print(": ");
+      Serial.println((float)matrix[i][j]);
     }
   }
   name[0] = (char)'o';
@@ -779,6 +780,16 @@ float SensFusion::getPitchRate(){
 }
 float SensFusion::getYawRate(){
   return gyroz * M_PI_F/180.0f;
+}
+
+float SensFusion::getMagx(){
+  return magx;
+}  
+float SensFusion::getMagy(){
+  return magy;
+}
+float SensFusion::getMagz(){
+  return magz;
 }
 float SensFusion::returnZ(){
   return estimatedZ;

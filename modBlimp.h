@@ -39,7 +39,6 @@ class ModBlimp {
 
         float groundZ;
         
-        SensFusion sensorSuite;
         UDPCom udpSuite;
         IBusBM IBus; 
 
@@ -49,6 +48,7 @@ class ModBlimp {
         void initSensors(init_sensors_t  *sensors); //attempts to connect to the sensors using sensorswuite.
 
     public:
+        SensFusion sensorSuite;
         ModBlimp(); //constructor
 
         //initialization functions

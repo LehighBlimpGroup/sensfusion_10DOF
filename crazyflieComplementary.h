@@ -135,6 +135,9 @@ class SensFusion {
         float getRoll();
         float getPitch();
         float getYaw();
+        float getMagx();
+        float getMagy();
+        float getMagz();
         float getRollRate();
         float getPitchRate();
         float getYawRate();

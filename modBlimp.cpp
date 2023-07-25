@@ -44,7 +44,7 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
     init_sensors_t init_sensors = {
     .Kacc = 5,
     .Kgyro = -1,
-    .Kmag = 0,
+    .Kmag = 5,
     .baro = true,
     .eulerGamma = 0,
     .rateGamma = .95f,
@@ -102,13 +102,13 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
 
     //initializes magnetometer with some calibration values
     // these values have an automatic init inside, but it is better to make your own
-    float transformationMatrix[3][3] = {
-      {     1.0000f,  -32.2488f,   -0.4705f},
-    {-30.6786f,   -0.2169f,   -5.6020f},
-      {-1.1802f,    0.0597f,   35.5136f}
-    };
-    float offsets[3] = {20.45f, 64.11f, -67.0f};
-    magnetometerCalibration(offsets, transformationMatrix);
+    // float transformationMatrix[3][3] = {
+    //   {     1.0000f,  -32.2488f,   -0.4705f},
+    // {-30.6786f,   -0.2169f,   -5.6020f},
+    //   {-1.1802f,    0.0597f,   35.5136f}
+    // };
+    // float offsets[3] = {20.45f, 64.11f, -67.0f};
+    // magnetometerCalibration(offsets, transformationMatrix);
 }
 
 HardwareSerial MySerial0(0);
@@ -164,6 +164,7 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
         sensorSuite.initSensors();
         sensorSuite.updateKp(init_sensors->Kacc,init_sensors->Kgyro,init_sensors->Kmag);//5,-1,0.3
         groundZ = sensorSuite.returnZ();
+        sensorSuite.enterTransform();
     }
 
         //initialize UDP
@@ -309,13 +310,17 @@ void ModBlimp::calibrationMode(int flag) {
         float input_data[13] = {(float)flag, 0.0, 0.0, 0.0, 0.0, 
                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         float calibration_data[6] = {0.0,0.0,0.0,0.0,0.0,0.0};
+        bool uncalibrated = true;
         while (flag != 0) {
             
             if (flag==1) { //start sending data
                 sensorSuite.prepCalibrationData(calibration_data);
                 udpSuite.send_mag_acc(calibration_data);
-            } else if (flag == 2) { // recieve calibration command
-                sensorSuite.saveCalibration(input_data);
+            } else if (flag == 2 ) { // recieve calibration command
+                if (uncalibrated == true){
+                  sensorSuite.saveCalibration(input_data);
+                  uncalibrated = false;
+                }
                 udpSuite.sendAck();
             }
             delay(125);
@@ -323,6 +328,7 @@ void ModBlimp::calibrationMode(int flag) {
             flag = input_data[0];
         }
         //restart system
+        Serial.println("No longer Calibrating!");
     }
 }
 

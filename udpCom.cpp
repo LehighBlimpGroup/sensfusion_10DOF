@@ -53,7 +53,7 @@ void UDPCom::init(){
 void UDPCom::send_udp_feedback(String dat1, String dat2, String dat3, String dat4){ //const unsigned char *buffer
   if (active){
     String blimp_feedback = String("0,");
-    blimp_feedback = dat1 + String(",") 
+    blimp_feedback += dat1 + String(",") 
                     + dat2 + String(",") 
                     + dat3 + String(",") + dat4;
   
