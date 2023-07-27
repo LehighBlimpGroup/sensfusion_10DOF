@@ -98,7 +98,7 @@ if __name__ == "__main__":
                 taux = 0
             fz = 0#-2*joystick.get_axis(1)  # right handler: up-down, inverted
             if abs(joystick.get_axis(2)) > .1:
-                tauz = -3*joystick.get_axis(2) # right handler: left-right
+                tauz = -2*joystick.get_axis(2) # right handler: left-right
             else:
                 tauz = 0
             fy = 0

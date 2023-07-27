@@ -66,6 +66,7 @@ class ModBlimp {
         //TODO rawInput_t getRawInputs();
         void addFeedback(controller_t *controls, sensors_t *sensors); //uses the sensor data to add feedback directly into controller_t
         void getOutputs(controller_t *controls, actuation_t* outputs); //converts control
+        void getOutputs(controller_t *controls, sensors_t *sensors, actuation_t* outputs); //converts control
         void executeOutputs(actuation_t *out);
         float clamp(float in, float min, float max);
         void send_udp_feedback(String dat1, String dat2, String dat3, String dat4);
