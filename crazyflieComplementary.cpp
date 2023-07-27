@@ -59,6 +59,7 @@ SensFusion::SensFusion(){
   yaw = 0;
   velocityZ = 0;
   velocityZbaro = 0;
+  velocityZbaroAve = 0;
   estimatedZold = 0;
   accZ;
   estimatedZ = 0.0f;
@@ -495,7 +496,9 @@ void SensFusion::positionZupdate(float dt) {
       estimatedZ = baroHeight;
   } 
     estimatedZ += (velocityFactor * velocityZ + estAlphaAsl * (baroHeight-estimatedZ)) * dt;
+    
     velocityZbaro = estimatedZ - estimatedZold;
+    
     estimatedZold = estimatedZ;
 }
 
@@ -795,6 +798,6 @@ float SensFusion::returnZ(){
   return estimatedZ;
 }
 float SensFusion::returnVZ(){
-  return velocityZ;
+  return velocityZbaro;
 }
 

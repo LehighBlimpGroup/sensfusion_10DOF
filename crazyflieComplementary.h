@@ -92,6 +92,7 @@ class SensFusion {
         float yaw;
         float velocityZ ;
         float velocityZbaro;
+        float velocityZbaroAve;
         float estimatedZold;
         float accZ;
         float estimatedZ ;

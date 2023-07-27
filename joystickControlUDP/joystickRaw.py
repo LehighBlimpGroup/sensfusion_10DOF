@@ -6,8 +6,8 @@ import struct
 import math
 
 # udp params
-UDP_IP = "192.168.0.39" #192.168.0.05
-UDP_PORT = 1234
+UDP_IP = "192.168.0.55" #192.168.0.05
+UDP_PORT = 1600
 print("UDP target IP: %s" % UDP_IP)
 print("UDP target port: %s" % UDP_PORT)
 
@@ -89,13 +89,16 @@ if __name__ == "__main__":
                 b_state = not b_state
             b_old = b
             if abs(joystick.get_axis(3) )> .1:
-                fx = -0.5*joystick.get_axis(3) # left handler: up-down, inverted
+                fx = -1*joystick.get_axis(3) # left handler: up-down, inverted
             else:
                 fx = 0
-            taux = 0#joystick.get_axis(3) # left handler: left-right
+            if abs(joystick.get_axis(0)) > .1:
+                taux = -0.1*joystick.get_axis(0) 
+            else:
+                taux = 0
             fz = 0#-2*joystick.get_axis(1)  # right handler: up-down, inverted
-            if abs(joystick.get_axis(2)) > .2:
-                tauz = -0.3*joystick.get_axis(2) # right handler: left-right
+            if abs(joystick.get_axis(2)) > .1:
+                tauz = -3*joystick.get_axis(2) # right handler: left-right
             else:
                 tauz = 0
             fy = 0

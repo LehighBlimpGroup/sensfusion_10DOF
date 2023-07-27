@@ -172,6 +172,7 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
         Serial.println("Starting UDP Init");
         udpSuite.init();
     }
+    Serial.println("Finished Init");
 
 
 
@@ -255,7 +256,7 @@ void ModBlimp::defaultControl(){ //contains an example of the entire control sta
         if (init_sensors->baro) {
             
             sensors->estimatedZ = sensors->estimatedZ * init_sensors->zGamma + sensorSuite.returnZ()* (1-init_sensors->zGamma);
-            sensors->velocityZ = sensorSuite.returnVZ(); 
+            sensors->velocityZ = sensors->velocityZ * init_sensors->zGamma + sensorSuite.returnVZ()* (1-init_sensors->zGamma);
         } else {
             sensors->estimatedZ = 0;
             sensors->velocityZ = 0;
@@ -367,7 +368,7 @@ void ModBlimp::addFeedback(controller_t *controls, sensors_t *sensors) {
       float cosr = (float) cos(sensors->roll);
       float ifx = controls->fx;
       controls->fx = ifx*cosp + controls->fz*sinp;
-      controls->fz = (ifx*sinp + controls->fz* cosp)/cosr;
+      controls->fz = (-1*ifx*sinp + controls->fz* cosp)/cosr;
     }
 }
 
@@ -389,10 +390,14 @@ void ModBlimp::getOutputs(controller_t *controls, actuation_t *out){
     out->ready = true;
     //inputs to the A-Matrix
     float l = PDterms->lx; //.3
-    float fx = clamp(controls->fx, -1 , 1);//setpoint->bicopter.fx;
-    float fz = clamp(controls->fz, 0 , 2);//setpoint->bicopter.fz;
+    avex = avex * 0.9 + controls->fx *.1;
+    avez = avez * 0.9 + controls->fz *.1;
+    float fx = clamp(avex, -1 , 1);//setpoint->bicopter.fx;
+    float fz = clamp(avez, 0.1 , 2);//setpoint->bicopter.fz;
+    float maxRadsYaw = .25;//.175;
+    float magxz = sqrt(fz*fz + fx*fx)* tan(maxRadsYaw); //limits the yaw based on the magnitude of the force
     float taux = clamp(controls->tx, -l + (float)0.01 , l - (float) 0.01);
-    float tauz = clamp(controls->tz, -.3 , .3);// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
+    float tauz = clamp(controls->tz, -1 , 1)*magxz;// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
 
 
     //inverse A-Matrix calculations
@@ -406,16 +411,16 @@ void ModBlimp::getOutputs(controller_t *controls, actuation_t *out){
     float t2 = atan2((fz*l + taux)/term4, (fx*l - tauz)/term4 );
 
     //checking for full rotations
-    while (t1 < 0) {
+    while (t1 < -PI/2) {
       t1 = t1 + 2 * PI;
     }
-    while (t1 > 2*PI) {
+    while (t1 > 3*PI/2) {
       t1 = t1 - 2 * PI;
     }
-    while (t2 < 0) {
+    while (t2 < -PI/2) {
       t2 = t2 + 2 * PI;
     }
-    while (t2 > 2*PI) {
+    while (t2 > 3*PI/2) {
       t2 = t2 - 2 * PI;
     }
 

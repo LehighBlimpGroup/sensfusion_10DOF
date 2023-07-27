@@ -25,6 +25,9 @@ class ModBlimp {
         Servo servo2; 
         Servo thrust1;
         Servo thrust2;
+
+        float avex = 0;
+        float avez = 0; 
         
         //flag holders
         init_sensors_t  *init_sensors;

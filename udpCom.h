@@ -11,7 +11,7 @@ class UDPCom {
     private:
         const char * ssid = "AIRLab-BigLab";
         const char * password = "Airlabrocks2022";
-        int UDPport = 1234; //TODO check if sending feedback uses a different UDP port
+        int UDPport = 1600; //TODO check if sending feedback uses a different UDP port
         int delayMS = 1000;
         AsyncUDP udp;
         bool active = false;
