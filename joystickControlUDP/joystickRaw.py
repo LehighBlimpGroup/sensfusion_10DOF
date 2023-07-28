@@ -6,7 +6,7 @@ import struct
 import math
 
 # udp params
-UDP_IP = "192.168.0.55" #192.168.0.05
+UDP_IP = "192.168.0.25" #192.168.0.05
 UDP_PORT = 1600
 print("UDP target IP: %s" % UDP_IP)
 print("UDP target port: %s" % UDP_PORT)
@@ -74,6 +74,13 @@ if __name__ == "__main__":
     absz = 0
     b_old = 0
     b_state = 1
+    x_old = 0
+    x_state = 1
+    l_old = 0
+    
+    r_old = 0
+    snap = 0
+    
     tauz = 0
     fx = 0
     state = 0
@@ -85,9 +92,17 @@ if __name__ == "__main__":
             # Get the joystick readings
             pygame.event.pump()
             b = joystick.get_button(1)
+            x = joystick.get_button(2)
+            left = joystick.get_button(13)
+            right = joystick.get_button(14)
             if b == 1 and b_old == 0:
                 b_state = not b_state
             b_old = b
+
+            if x == 1 and x_old == 0:
+                x_state = not x_state
+            x_old = x
+
             if abs(joystick.get_axis(3) )> .1:
                 fx = -1*joystick.get_axis(3) # left handler: up-down, inverted
             else:
@@ -97,10 +112,22 @@ if __name__ == "__main__":
             else:
                 taux = 0
             fz = 0#-2*joystick.get_axis(1)  # right handler: up-down, inverted
-            if abs(joystick.get_axis(2)) > .1:
-                tauz = -2*joystick.get_axis(2) # right handler: left-right
+            
+            if x_state:
+                if left == 1 and l_old == 0:
+                    snap += 1
+                    tauz = 3.1415/4
+                elif right == 1 and r_old == 0:
+                    snap += 1
+                    tauz = -3.1415/4
             else:
-                tauz = 0
+                snap = 0
+                if abs(joystick.get_axis(2)) > .1:
+                    tauz = -2*joystick.get_axis(2) # right handler: left-right
+                else:
+                    tauz = 0
+            l_old = left
+            r_old = right
             fy = 0
             tauy = 0
             #absz = .5
@@ -108,6 +135,7 @@ if __name__ == "__main__":
                 absz += -(time.time() - time_start)*joystick.get_axis(1)
             if  b_state == 1:
                 absz = .2
+                x_state = 0
             
             time_start = time.time()
 
@@ -128,7 +156,7 @@ if __name__ == "__main__":
 
             # print()
             if state < 40:
-                message = struct.pack('<fffffffffffff', 0, fx, fy , fz, taux, tauy, tauz, absz, not b_state,0,0,0,0) 
+                message = struct.pack('<fffffffffffff', 0, fx, fy , fz, taux, tauy, tauz, absz, not b_state,snap,0,0,0) 
                 udp_send(sock, UDP_IP, UDP_PORT, message)
                 #print(message)
                 state += 1

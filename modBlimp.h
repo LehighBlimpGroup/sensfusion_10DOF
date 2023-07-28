@@ -18,8 +18,7 @@ class ModBlimp;
 class ModBlimp {
     private:
 
-        // IBusBM IBus; 
-        // HardwareSerial MySerial0(0);
+
         float M_PI_F;
         Servo servo1;
         Servo servo2; 

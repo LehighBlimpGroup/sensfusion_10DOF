@@ -394,8 +394,8 @@ void ModBlimp::getOutputs(controller_t *controls, actuation_t *out){
     avez = avez * 0.9 + controls->fz *.1;
     float fx = clamp(avex, -1 , 1);//setpoint->bicopter.fx;
     float fz = clamp(avez, 0.1 , 2);//setpoint->bicopter.fz;
-    float maxRadsYaw = .25;//.175;
-    float magxz = fz* tan(maxRadsYaw) + fx * l * 0.9f; //limits the yaw based on the magnitude of the force
+    float maxRadsYaw = .175;//.175;
+    float magxz = max(fz* tan(maxRadsYaw), fx * l * 0.7f); //limits the yaw based on the magnitude of the force
     float taux = clamp(controls->tx, -l + (float)0.01 , l - (float) 0.01);
     float tauz = clamp(controls->tz, -1 , 1)*magxz;// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
 
@@ -458,8 +458,8 @@ void ModBlimp::getOutputs(controller_t *controls, sensors_t *sensors, actuation_
     
     float fx = clamp(controls->fx, -1 , 1);//setpoint->bicopter.fx;
     float fz = clamp(controls->fz, 0.1 , 2);//setpoint->bicopter.fz;
-    float maxRadsYaw = .25;//.175;
-    float magxz = fz* tan(maxRadsYaw) + fx * l * 0.9f; //limits the yaw based on the magnitude of the force
+    float maxRadsYaw = .1;//.175;
+    float magxz = max(fz* tan(maxRadsYaw), fx * l * 0.2f); //limits the yaw based on the magnitude of the force
     float taux = clamp(controls->tx, -l + (float)0.01 , l - (float) 0.01);
     float tauz = clamp(controls->tz, -1 , 1)*magxz;// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
 
