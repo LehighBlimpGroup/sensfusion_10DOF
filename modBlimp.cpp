@@ -44,7 +44,7 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
     init_sensors_t init_sensors = {
     .Kacc = 5,
     .Kgyro = -1,
-    .Kmag = 0,
+    .Kmag = 5,
     .baro = true,
     .eulerGamma = 0,
     .rateGamma = .95f,
@@ -102,13 +102,13 @@ void ModBlimp::initDefault() { //contains an example of how to initialize the sy
 
     //initializes magnetometer with some calibration values
     // these values have an automatic init inside, but it is better to make your own
-    float transformationMatrix[3][3] = {
-      {     1.0000f,  -32.2488f,   -0.4705f},
-    {-30.6786f,   -0.2169f,   -5.6020f},
-      {-1.1802f,    0.0597f,   35.5136f}
-    };
-    float offsets[3] = {20.45f, 64.11f, -67.0f};
-    magnetometerCalibration(offsets, transformationMatrix);
+    // float transformationMatrix[3][3] = {
+    //   {     1.0000f,  -32.2488f,   -0.4705f},
+    // {-30.6786f,   -0.2169f,   -5.6020f},
+    //   {-1.1802f,    0.0597f,   35.5136f}
+    // };
+    // float offsets[3] = {20.45f, 64.11f, -67.0f};
+    // magnetometerCalibration(offsets, transformationMatrix);
 }
 
 HardwareSerial MySerial0(0);
@@ -164,6 +164,7 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
         sensorSuite.initSensors();
         sensorSuite.updateKp(init_sensors->Kacc,init_sensors->Kgyro,init_sensors->Kmag);//5,-1,0.3
         groundZ = sensorSuite.returnZ();
+        sensorSuite.enterTransform();
     }
 
         //initialize UDP
@@ -171,12 +172,14 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
         Serial.println("Starting UDP Init");
         udpSuite.init();
     }
+    Serial.println("Finished Init");
 
 
 
 }
 void ModBlimp::magnetometerCalibration(float (&offset)[3], float (&matrix)[3][3]){
-  sensorSuite.enterTransform(offset, matrix);
+  sensorSuite.saveTransform(offset, matrix);
+  sensorSuite.enterTransform();
 }
 
 //loop functions
@@ -253,7 +256,7 @@ void ModBlimp::defaultControl(){ //contains an example of the entire control sta
         if (init_sensors->baro) {
             
             sensors->estimatedZ = sensors->estimatedZ * init_sensors->zGamma + sensorSuite.returnZ()* (1-init_sensors->zGamma);
-            sensors->velocityZ = sensorSuite.returnVZ(); 
+            sensors->velocityZ = sensors->velocityZ * init_sensors->zGamma + sensorSuite.returnVZ()* (1-init_sensors->zGamma);
         } else {
             sensors->estimatedZ = 0;
             sensors->velocityZ = 0;
@@ -308,13 +311,17 @@ void ModBlimp::calibrationMode(int flag) {
         float input_data[13] = {(float)flag, 0.0, 0.0, 0.0, 0.0, 
                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         float calibration_data[6] = {0.0,0.0,0.0,0.0,0.0,0.0};
+        bool uncalibrated = true;
         while (flag != 0) {
             
             if (flag==1) { //start sending data
                 sensorSuite.prepCalibrationData(calibration_data);
                 udpSuite.send_mag_acc(calibration_data);
-            } else if (flag == 2) { // recieve calibration command
-                sensorSuite.saveCalibration(input_data);
+            } else if (flag == 2 ) { // recieve calibration command
+                if (uncalibrated == true){
+                  sensorSuite.saveCalibration(input_data);
+                  uncalibrated = false;
+                }
                 udpSuite.sendAck();
             }
             delay(125);
@@ -322,6 +329,7 @@ void ModBlimp::calibrationMode(int flag) {
             flag = input_data[0];
         }
         //restart system
+        Serial.println("No longer Calibrating!");
     }
 }
 
@@ -360,7 +368,7 @@ void ModBlimp::addFeedback(controller_t *controls, sensors_t *sensors) {
       float cosr = (float) cos(sensors->roll);
       float ifx = controls->fx;
       controls->fx = ifx*cosp + controls->fz*sinp;
-      controls->fz = (ifx*sinp + controls->fz* cosp)/cosr;
+      controls->fz = (-1*ifx*sinp + controls->fz* cosp)/cosr;
     }
 }
 
@@ -382,10 +390,14 @@ void ModBlimp::getOutputs(controller_t *controls, actuation_t *out){
     out->ready = true;
     //inputs to the A-Matrix
     float l = PDterms->lx; //.3
-    float fx = clamp(controls->fx, -1 , 1);//setpoint->bicopter.fx;
-    float fz = clamp(controls->fz, 0 , 2);//setpoint->bicopter.fz;
+    avex = avex * 0.9 + controls->fx *.1;
+    avez = avez * 0.9 + controls->fz *.1;
+    float fx = clamp(avex, -1 , 1);//setpoint->bicopter.fx;
+    float fz = clamp(avez, 0.1 , 2);//setpoint->bicopter.fz;
+    float maxRadsYaw = .25;//.175;
+    float magxz = fz* tan(maxRadsYaw) + fx * l * 0.9f; //limits the yaw based on the magnitude of the force
     float taux = clamp(controls->tx, -l + (float)0.01 , l - (float) 0.01);
-    float tauz = clamp(controls->tz, -.3 , .3);// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
+    float tauz = clamp(controls->tz, -1 , 1)*magxz;// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
 
 
     //inverse A-Matrix calculations
@@ -399,16 +411,16 @@ void ModBlimp::getOutputs(controller_t *controls, actuation_t *out){
     float t2 = atan2((fz*l + taux)/term4, (fx*l - tauz)/term4 );
 
     //checking for full rotations
-    while (t1 < 0) {
+    while (t1 < -PI/2) {
       t1 = t1 + 2 * PI;
     }
-    while (t1 > 2*PI) {
+    while (t1 > 3*PI/2) {
       t1 = t1 - 2 * PI;
     }
-    while (t2 < 0) {
+    while (t2 < -PI/2) {
       t2 = t2 + 2 * PI;
     }
-    while (t2 > 2*PI) {
+    while (t2 > 3*PI/2) {
       t2 = t2 - 2 * PI;
     }
 
@@ -425,13 +437,85 @@ void ModBlimp::getOutputs(controller_t *controls, actuation_t *out){
     }
     return;
 }
+void ModBlimp::getOutputs(controller_t *controls, sensors_t *sensors, actuation_t *out){
+
+    //set up output
+    
+
+     //set output to default if controls not ready
+    if (controls->ready == false){
+      out->s1 = .5f;
+      out->s2 = .5f;
+      out->m1 = 0;
+      out->m2 = 0;
+      out->ready = false;
+      return;
+    }
+
+    out->ready = true;
+    //inputs to the A-Matrix
+    float l = PDterms->lx; //.3
+    
+    float fx = clamp(controls->fx, -1 , 1);//setpoint->bicopter.fx;
+    float fz = clamp(controls->fz, 0.1 , 2);//setpoint->bicopter.fz;
+    float maxRadsYaw = .25;//.175;
+    float magxz = fz* tan(maxRadsYaw) + fx * l * 0.9f; //limits the yaw based on the magnitude of the force
+    float taux = clamp(controls->tx, -l + (float)0.01 , l - (float) 0.01);
+    float tauz = clamp(controls->tz, -1 , 1)*magxz;// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
+
+
+    //inverse A-Matrix calculations
+    float term1 = l*l*fx*fx + l*l*fz*fz + taux*taux + tauz*tauz;
+    float term2 = 2*fz*l*taux - 2*fx*l*tauz;
+    float term3 = sqrt(term1+term2);
+    float term4 = sqrt(term1-term2);
+    float f1 = term3/(2*l); // in unknown units
+    float f2 = term4/(2*l);
+    float t1 = atan2((fz*l - taux)/term3, (fx*l + tauz)/term3 ) - sensors->pitch;// in radians
+    float t2 = atan2((fz*l + taux)/term4, (fx*l - tauz)/term4 ) - sensors->pitch;
+
+    //checking for full rotations
+    while (t1 < -PI/2) {
+      t1 = t1 + 2 * PI;
+    }
+    while (t1 > 3*PI/2) {
+      t1 = t1 - 2 * PI;
+    }
+    while (t2 < -PI/2) {
+      t2 = t2 + 2 * PI;
+    }
+    while (t2 > 3*PI/2) {
+      t2 = t2 - 2 * PI;
+    }
+
+    //converting values to a more stable form
+    out->s1 = clamp(t1, 0, PI)/(PI);// cant handle values between PI and 2PI
+    out->s2 = clamp(t2, 0, PI)/(PI);
+    out->m1 = clamp(f1, 0, 1);
+    out->m2 = clamp(f2, 0, 1);
+    if (out->m1 < 0.02f ){
+      out->s1 = 0.5f; 
+    }
+    if (out->m2 < 0.02f ){
+      out->s2 = 0.5f; 
+    }
+    return;
+}
+
 void ModBlimp::executeOutputs(actuation_t *outputs){
 
     servo1.write((int) (outputs->s1*180));
     servo2.write((int) ((1-outputs->s2)*180));
     if (init_flags->motor_type == 0) {
-        thrust1.writeMicroseconds((int) ((outputs->m1)*1000+1000));
-        thrust2.writeMicroseconds((int) ((outputs->m2)*1000+1000));
+        if (outputs->ready){
+          thrust1.writeMicroseconds((int) ((outputs->m1)*900+1100));
+          thrust2.writeMicroseconds((int) ((outputs->m2)*900+1100));
+
+        } else {
+
+          thrust1.writeMicroseconds((int) 0);
+          thrust2.writeMicroseconds((int) 0);
+        }
     } else if (init_flags->motor_type == 1){
         if (outputs->ready){
             analogWrite(THRUST1, (int) (0 + (outputs->m1)*255));

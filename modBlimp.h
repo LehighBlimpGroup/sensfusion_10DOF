@@ -25,6 +25,9 @@ class ModBlimp {
         Servo servo2; 
         Servo thrust1;
         Servo thrust2;
+
+        float avex = 0;
+        float avez = 0; 
         
         //flag holders
         init_sensors_t  *init_sensors;
@@ -39,7 +42,6 @@ class ModBlimp {
 
         float groundZ;
         
-        SensFusion sensorSuite;
         UDPCom udpSuite;
         IBusBM IBus; 
 
@@ -49,6 +51,7 @@ class ModBlimp {
         void initSensors(init_sensors_t  *sensors); //attempts to connect to the sensors using sensorswuite.
 
     public:
+        SensFusion sensorSuite;
         ModBlimp(); //constructor
 
         //initialization functions
@@ -63,6 +66,7 @@ class ModBlimp {
         //TODO rawInput_t getRawInputs();
         void addFeedback(controller_t *controls, sensors_t *sensors); //uses the sensor data to add feedback directly into controller_t
         void getOutputs(controller_t *controls, actuation_t* outputs); //converts control
+        void getOutputs(controller_t *controls, sensors_t *sensors, actuation_t* outputs); //converts control
         void executeOutputs(actuation_t *out);
         float clamp(float in, float min, float max);
         void send_udp_feedback(String dat1, String dat2, String dat3, String dat4);

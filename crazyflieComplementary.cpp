@@ -50,7 +50,7 @@ SensFusion::SensFusion(){
   // Calibration variables //-1.53,14.27,-14.04
   bx = 1;//cos(magneticInclincation* M_PI_f /180.0f);
   bz = 0;//sin(magneticInclincation* M_PI_f /180.0f);
-  magInc = 0.0f;//-70.0f; //magnetic inclination of bethlehem
+  magInc = -11.0f;//-70.0f; //magnetic inclination of bethlehem
 
 
   //outputs
@@ -59,6 +59,7 @@ SensFusion::SensFusion(){
   yaw = 0;
   velocityZ = 0;
   velocityZbaro = 0;
+  velocityZbaroAve = 0;
   estimatedZold = 0;
   accZ;
   estimatedZ = 0.0f;
@@ -67,13 +68,14 @@ SensFusion::SensFusion(){
 
   min = 0;
   max = 0;
-  float transformationMatrixBackup[3][3] = {
-    {1.0f, 9.693f, 0.6187f},
-    {9.6624f, -0.6822f, 0.3864f},
-    {-0.4155f, 0.6628f, -10.7386f}
-  };
-  float offsetsBackup[3] = {11.98f, 7.01f, 21.77f};
-  enterTransform(offsetsBackup, transformationMatrixBackup);
+  // float transformationMatrixBackup[3][3] = {
+  //   {1.0f, 9.693f, 0.6187f},
+  //   {9.6624f, -0.6822f, 0.3864f},
+  //   {-0.4155f, 0.6628f, -10.7386f}
+  // };
+  // float offsetsBackup[3] = {11.98f, 7.01f, 21.77f};
+  // saveTransform(offsetsBackup, transformationMatrixBackup);
+  enterTransform();
 }
 
 
@@ -112,9 +114,11 @@ void SensFusion::updateSensors(){
     int barotimer = newtime - barotime; 
     if (barotimer > 1/barorate * 1000000) {
       if (baroOn) {
-        baroHeight = bme.readAltitude();
-        if (baroHeight < 1 || baroHeight > 2000){
+        float newHeight = bme.readAltitude();
+        if (newHeight > 1000 or newHeight < 1){
           baroOn = bme.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
+        } else {
+          baroHeight = newHeight;
         }
       } else {
         baroOn = bme.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
@@ -492,7 +496,9 @@ void SensFusion::positionZupdate(float dt) {
       estimatedZ = baroHeight;
   } 
     estimatedZ += (velocityFactor * velocityZ + estAlphaAsl * (baroHeight-estimatedZ)) * dt;
+    
     velocityZbaro = estimatedZ - estimatedZold;
+    
     estimatedZold = estimatedZ;
 }
 
@@ -506,8 +512,9 @@ void SensFusion::initSensors(){
   oldtime  = micros();
   barotime = micros();
   //magneticInclincation = -11.0f;
-  bx = 0;//cos(magInc * M_PI_F /180.0f);
-  bz = 1;//sin(magInc * M_PI_F /180.0f);
+  magInc = -20;
+  bx = cos(magInc * M_PI_F /180.0f);
+  bz = sin(magInc * M_PI_F /180.0f);
   // #ifdef _ESP32_HAL_I2C_H_ // For ESP32
   // Wire.begin(4, 5);//da, cl
   // mySensor.setWire(&Wire);
@@ -589,13 +596,59 @@ void SensFusion::sensfusionLoop(bool verbose, int flag) {
     }
   } 
 }
-void SensFusion::enterTransform(float (&offset)[3], float (&matrix)[3][3]){
-    for (int i = 0; i < 3; i++) {
-        offsets[i] = offset[i];
-        for (int j = 0; j < 3; j++) {
-          transformationMatrix[i][j] = matrix[i][j];
-        }
+void SensFusion::enterTransform(){
+  char* name = new char[3];
+  char str[256];
+  preferences.begin("calibration", true); 
+  name[2] = (char)'\0';
+  
+  name[0] = (char)'m';
+  for (int i = 0; i < 3; i ++) {
+    for (int j = 0; j < 3; j ++) {
+      itoa((int)(i*3 + j),str,16);
+      name[1] = str[0];
+      transformationMatrix[i][j] = (float)preferences.getFloat(name);// place UDP recieve here to get the values?
+      Serial.print(name);
+      Serial.print(": ");
+      Serial.println((float)preferences.getFloat(name));
     }
+  }
+  name[0] = (char)'o';
+  for (int i = 0; i < 3; i ++) {
+    itoa(i,str,16);
+    name[1] = str[0];
+    offsets[i] = (float)preferences.getFloat(name);// place UDP recieve here to get the values?
+    Serial.print(name);
+    Serial.print(": ");
+    Serial.println((float)preferences.getFloat(name));
+  }
+  preferences.end();
+}
+void SensFusion::saveTransform(float (&offset)[3], float (&matrix)[3][3]){
+  char* name = new char[3];
+  char str[256];
+  preferences.begin("calibration", false); 
+  preferences.clear();
+  name[2] = (char)'\0';
+  
+  name[0] = (char)'m';
+  for (int i = 0; i < 3; i ++) {
+    for (int j = 0; j < 3; j ++) {
+      itoa((int)(i*3 + j),str,16);
+      name[1] = str[0];
+      preferences.putFloat(name, (float_t)(matrix[i][j]));// place UDP recieve here to get the values?
+      Serial.print(name);
+      Serial.print(": ");
+      Serial.println((float)matrix[i][j]);
+    }
+  }
+  name[0] = (char)'o';
+  for (int i = 0; i < 3; i ++) {
+    itoa(i,str,16);
+    name[1] = str[0];
+    preferences.putFloat(name, (float_t)(offset[i]));// place UDP recieve here to get the values?
+  }
+  preferences.end();
 }
 //allows you to record data with putty 
 void SensFusion::recordData() {
@@ -709,7 +762,8 @@ void SensFusion::saveCalibration(float input_data[13]) {
     {input_data[7],input_data[8],input_data[9]}
   };
   float offsetsBackup[3] = {input_data[10],input_data[11],input_data[12]};
-  enterTransform(offsetsBackup, transformationMatrixBackup);
+  saveTransform(offsetsBackup, transformationMatrixBackup);
+  enterTransform();
 }
 
 float SensFusion::getRoll(){
@@ -730,10 +784,20 @@ float SensFusion::getPitchRate(){
 float SensFusion::getYawRate(){
   return gyroz * M_PI_F/180.0f;
 }
+
+float SensFusion::getMagx(){
+  return magx;
+}  
+float SensFusion::getMagy(){
+  return magy;
+}
+float SensFusion::getMagz(){
+  return magz;
+}
 float SensFusion::returnZ(){
   return estimatedZ;
 }
 float SensFusion::returnVZ(){
-  return velocityZ;
+  return velocityZbaro;
 }
 
