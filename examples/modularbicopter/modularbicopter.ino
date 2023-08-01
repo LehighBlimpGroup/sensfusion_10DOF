@@ -10,15 +10,18 @@ flags to be used in the init
 -bool verbose: allows some debug print statments
 -bool sensors: enables or disables the sensorsuite package: if false all values will be 0, and sensorReady =false in the sensor 
 -bool UDP: starts up the UDP connection such that other UDP functions will be enabled
+-int motor_type: determines if you are using brushless or brushed motors: 0 = brushless, 1 = brushed;
 -int mode: sets which controller to listen to: 0 = UDP, 1 = IBUS, -1 = None;
 -int control: sets which type of controller to use: 0 = bicopter, 1 = spinning(TODO), -1 = None;
 */
 init_flags_t init_flags = {
   .verbose = false,
-  .sensors = true,
-  .escarm = true,
+  .sensors = false,
+  .escarm = false,
   .UDP = true,
   .Ibus = false,
+  .PORT = 1345,
+  .motor_type = 0,
   .mode = 0,
   .control = 0,
 };
@@ -40,8 +43,8 @@ init_sensors_t init_sensors = {
   .Kmag = 0,
   .baro = true,
   .eulerGamma = 0,
-  .rateGamma = .8f,
-  .zGamma = 0,
+  .rateGamma = 0.8f,
+  .zGamma = 0.9,
 };
 
 
@@ -67,12 +70,12 @@ feedback_t feedbackPD = {
   .z = true,
   .rotation = true,
 
-  .Croll = 0,
+  .Croll = 1,
   .Cpitch = 0, 
   .Cyaw = .4,
   .Cx = 1,
   .Cy = 0,
-  .Cz = 0,
+  .Cz = 1,
   .Cabsz = 1,
 
   .kproll = 0,
@@ -98,6 +101,9 @@ controller_t controls;
 //rawInput_t rawInputs;TODO
 actuation_t outputs;
 
+float X ;
+float Y ;
+float Z ;
 
 
 void setup() {
@@ -108,21 +114,13 @@ void setup() {
     
     //initializes systems based on flags and saves flags into the system
     blimp.init(&init_flags, &init_sensors, &feedbackPD);
+    
 
-    //initializes magnetometer with some calibration values
-    // these values have an automatic init inside, but it is better to make your own
-    float transformationMatrix[3][3] = {
-      {     1.0000f,  -32.2488f,   -0.4705f},
-    {-30.6786f,   -0.2169f,   -5.6020f},
-      {-1.1802f,    0.0597f,   35.5136f}
-    };
-    float offsets[3] = {20.45f, 64.11f, -67.0f};
-    blimp.magnetometerCalibration(offsets, transformationMatrix);
+
   }
 
 }
 
-int countUDP = 0;
 
 void loop() {
   /*
@@ -144,7 +142,7 @@ void loop() {
     */
     blimp.getLatestSensorData(&sensors);
 
-    sensors.pitch = -1* sensors.pitch - .15;//hack to invert pitch due to orientation of the sensor
+    //sensors.pitch = -1* sensors.pitch - .15;//hack to invert pitch due to orientation of the sensor
     
     
 
@@ -156,6 +154,9 @@ void loop() {
     */
     blimp.getControllerData(&controls);
 
+    // controls.ready = true;
+    // controls.fz = .3;
+    // controls.fx = .5;
 
     /* TODO- NOT IMPLEMENTED
     //    optionally you can get the lastest information about the controller as raw values labeled as I1, I2, I3...
@@ -182,30 +183,7 @@ void loop() {
     blimp.getOutputs(&controls, &outputs);
     //getOutputs(&controls, &outputs); //this function is implemented here for you to customize
     
-    // Serial.print("p: ");
-    // Serial.print(sensors.pitch);
-    // Serial.print(", Z: ");
-    // Serial.print(sensors.estimatedZ);
-    // Serial.print(", VZ: ");
-    // Serial.print(sensors.velocityZ);
-    // Serial.print(", Rdy: ");
-    // Serial.print(controls.ready);
-    // Serial.print(", fzp: ");
-    // Serial.print(controls.fz);
-    // Serial.print(", m1: ");
-    // Serial.print(outputs.m1);
-    // Serial.print(", m2: ");
-    // Serial.print(outputs.m2);
-    // Serial.print(", s1: ");
-    // Serial.print(outputs.s1);
-    // Serial.print(", s2: ");
-    // Serial.println(outputs.s2);
-    if (countUDP == 10) {
-      blimp.send_udp_feedback(String(sensors.roll), String(sensors.pitch),
-                              String(sensors.yaw), String(sensors.yawrate));
-      countUDP = 0;
-    }
-    countUDP +=1;
+
     
 
 
@@ -215,7 +193,7 @@ void loop() {
     //    outputs should be floats between 0 and 1
     */
     blimp.executeOutputs(&outputs);
-    delay(20);
+    delay(5);
     
 
   }
@@ -228,7 +206,8 @@ void loop() {
       or just implement it in this program
   -----------------------------------------------------------------------------------------------------
 */
-
+float fzave = 0;
+float tzave = 0;
 
 //adds sensor feedback into the control values
 //this set is specifically made for bicopter
@@ -243,13 +222,17 @@ void addFeedback(controller_t *controls, sensors_t *sensors) {
 
     //z feedback 
     if (PDterms->z) { 
-    controls->fz = (controls->fz   - (sensors->estimatedZ-sensors->groundZ))*PDterms->kpz 
+    controls->fz = (controls->fz - (sensors->estimatedZ-sensors->groundZ))*PDterms->kpz 
                     - (sensors->velocityZ)*PDterms->kdz + controls->absz;
+    fzave = fzave * .975 + controls->fz * .025;
+    controls->fz = fzave;
     }
     
     //yaw feedback
     if (PDterms->yaw) { 
-      controls->tz = controls->tz * PDterms->kpyaw - sensors->yawrate*PDterms->kdyaw;
+      controls->tz = controls->tz - sensors->yawrate*PDterms->kdyaw;
+      tzave = tzave * .9 + controls->tz * .1;
+      controls->tz = tzave;
     }
     
     //roll feedback
