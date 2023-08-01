@@ -84,6 +84,9 @@ void ESPNOW::init()
 void ESPNOW::getControllerInputs(controller_t *controls)
 {
 
+    // Serial.print(esp_ready);
+    // Serial.print(',');
+    // Serial.println(millis() - esp_time_now);
     if (esp_ready && millis() - esp_time_now < delayMS)
     {
         controls->flag = (int)ESPNOW_Input.p1;
@@ -94,7 +97,7 @@ void ESPNOW::getControllerInputs(controller_t *controls)
         controls->ty = ESPNOW_Input.p6;
         controls->tz = ESPNOW_Input.p7;
         controls->absz = ESPNOW_Input.p8;
-        controls->ready = ESPNOW_Input.p9 != 0;
+        controls->ready = (bool)((int)(ESPNOW_Input.p9) != 0);
         controls->snapshot = (int)ESPNOW_Input.p10;
     }
     else

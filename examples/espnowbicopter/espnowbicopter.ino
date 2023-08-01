@@ -145,7 +145,9 @@ void loop() {
   //    contrains: fx, fy, fz, absz, tx, ty, tz, ready
   */
   blimp.getControllerData(&controls);
-
+  // Serial.print(controls.ready);
+  // Serial.print(",");
+  // Serial.println(controls.absz);
 
   /* TODO- NOT IMPLEMENTED
   //    optionally you can get the lastest information about the controller as raw values labeled as I1, I2, I3...

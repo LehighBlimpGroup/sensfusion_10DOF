@@ -107,6 +107,7 @@ void ModBlimp::initDefault()
   //  magnetometerCalibration(offsets, transformationMatrix);
 }
 
+
 HardwareSerial MySerial0(0);
 
 void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t *init_sensorsIn, feedback_t *feedbackPDIn)

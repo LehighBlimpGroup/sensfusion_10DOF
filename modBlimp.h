@@ -43,7 +43,6 @@ class ModBlimp {
         float groundZ;
         
         UDPCom udpSuite;
-        IBusBM IBus;
         ESPNOW espNow; 
 
         volatile unsigned long time_end;
@@ -52,6 +51,7 @@ class ModBlimp {
         void initSensors(init_sensors_t  *sensors); //attempts to connect to the sensors using sensorswuite.
 
     public:
+        IBusBM IBus;
         SensFusion sensorSuite;
         ModBlimp(); //constructor
 

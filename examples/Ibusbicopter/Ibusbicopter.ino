@@ -20,6 +20,7 @@ init_flags_t init_flags = {
   .escarm = false,
   .UDP = false,
   .Ibus = true,
+  .ESPNOW = false,
   .PORT = 1333,
   .motor_type = 1,
   .mode = 1,

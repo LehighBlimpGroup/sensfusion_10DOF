@@ -11,7 +11,7 @@
 #include <WiFi.h>
 
 // MAC addresses of the receivers
-uint8_t broadcastAddress1[] = {0x34, 0x85, 0x18, 0x91, 0x49, 0xC0}; // Receiver 1
+uint8_t broadcastAddress1[] = {0x34, 0x85, 0x18, 0x8D, 0x8B, 0x38}; // Receiver 1
 
 // Add MAC addresses for additional receivers here
 // uint8_t broadcastAddress2[] = {0xFF, , , , , }; // Receiver 2
@@ -92,7 +92,7 @@ String data;
 void loop()
 {
   HaveData = false;
-  delay(20);
+  // delay(50);
   while (Serial.available())
   {
     char c = Serial.read();

@@ -66,7 +66,7 @@ class Control_Input:
 
 
 def espnow_init():
-    ser = serial.Serial('/dev/cu.wchusbserial2140', 115200)
+    ser = serial.Serial('/dev/ttyACM1', 115200)
     return ser
 
 
@@ -82,7 +82,7 @@ def joystick_init():
 
 def esp_now_send(ser, input):
     try:
-        time.sleep(0.02)
+        
         # NOTE - The daley here need to match the delay in the ESP32 receiver code
         message = str(input)
         ser.write(message.encode())
@@ -102,7 +102,8 @@ def init():
 
 
 if __name__ == "__main__":
-    sock, joystick = init()
+    sock = espnow_init()
+    joystick = init()
     l = 0.2  # meters
     absz = 0
     b_old = 0
@@ -171,42 +172,21 @@ if __name__ == "__main__":
 
             time_start = time.time()
 
-            print(
-                round(fx, 2),
-                round(fz, 2),
-                round(taux, 2),
-                round(tauz, 2),
-                round(absz, 2),
-                b_state,
-            )
+            # print(
+            #     round(fx, 2),
+            #     round(fz, 2),
+            #     round(taux, 2),
+            #     round(tauz, 2),
+            #     round(absz, 2),
+            #     b_state,
+            # )
 
-            # print()
-            if state < 40:
-                message = struct.pack(
-                    '<fffffffffffff',
-                    0,
-                    fx,
-                    fy,
-                    fz,
-                    taux,
-                    tauy,
-                    tauz,
-                    absz,
-                    not b_state,
-                    snap,
-                    0,
-                    0,
-                    0,
-                )
-                esp_now_input = Control_Input(
-                    0, fx, fy, fz, taux, tauy, tauz, absz, not b_state, snap, 0, 0, 0
-                )
-                esp_now_send(sock, esp_now_input)
-                # print(message)
-                state += 1
-            else:
-                # main()#prints out information from drone
-                state = 0
+
+            esp_now_input = Control_Input(
+                0, fx, fy, fz, taux, tauy, tauz, absz, int(not b_state), snap, 0, 0, 0
+            )
+            esp_now_send(sock, esp_now_input)
+                
 
             # state = not state
             time.sleep(0.005)  # 0.005
