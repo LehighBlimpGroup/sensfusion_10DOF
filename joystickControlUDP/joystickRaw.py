@@ -6,8 +6,8 @@ import struct
 import math
 
 # udp params
-UDP_IP = "192.168.0.25" #192.168.0.05
-UDP_PORT = 1600
+UDP_IP = "192.168.0.55" #192.168.0.05
+UDP_PORT = 1345
 print("UDP target IP: %s" % UDP_IP)
 print("UDP target port: %s" % UDP_PORT)
 

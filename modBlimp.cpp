@@ -170,7 +170,7 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
         //initialize UDP
     if (init_flags->UDP){
         Serial.println("Starting UDP Init");
-        udpSuite.init();
+        udpSuite.init(init_flags->PORT);
     }
     Serial.println("Finished Init");
 
@@ -288,6 +288,7 @@ void ModBlimp::getControllerData(controller_t* controls){
         controls->tz = ((float)IBus.readChannel(0)-(float)1500)/(float)500;
         controls->ready = (bool)(IBus.readChannel(4)>1500);
         controls->flag = 0;
+        controls->snapshot = 0;
     
 
     } else { //control will be empty if no control input is given
@@ -300,6 +301,7 @@ void ModBlimp::getControllerData(controller_t* controls){
         controls->tz = 0;
         controls->ready = 0;
         controls->flag = 0;
+        controls->snapshot = 0;
     }
     
 

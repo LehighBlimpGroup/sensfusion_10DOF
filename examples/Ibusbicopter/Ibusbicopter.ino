@@ -20,6 +20,7 @@ init_flags_t init_flags = {
   .escarm = false,
   .UDP = false,
   .Ibus = true,
+  .PORT = 1333,
   .motor_type = 1,
   .mode = 1,
   .control = 0,
@@ -158,7 +159,7 @@ void loop() {
   //    actuation_t data type contains: m1, m2, s1, s2 for each motor and servo
   //        example is placed below
   */
-  blimp.getOutputs(&controls, &outputs);
+  blimp.getOutputs(&controls, &sensors, &outputs);
   //getOutputs(&controls, &outputs); //this function is implemented here for you to customize
   
 
@@ -169,7 +170,7 @@ void loop() {
   //    outputs should be floats between 0 and 1
   */
   blimp.executeOutputs(&outputs);
-  delay(10);
+  delay(5);
     
 
   

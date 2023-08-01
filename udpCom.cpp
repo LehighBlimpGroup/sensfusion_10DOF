@@ -12,9 +12,10 @@ UDPCom::UDPCom(){
 }
 
 
-void UDPCom::init(){
+void UDPCom::init(int port){
   //following code block connects you to the internet
     active = true;
+    UDPport = port;
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     if (WiFi.waitForConnectResult() != WL_CONNECTED) {
@@ -86,6 +87,7 @@ void UDPCom::sendAck() {
 }
 
 
+
 //unpacks the data into joystick data list
 void unpack_joystick(float *dat, const unsigned char *buffer) {
   int num_floats = 13;
@@ -117,6 +119,7 @@ void UDPCom::getControllerInputs(controller_t *controls){
     controls->tz = joy_data[6];
     controls->absz = joy_data[7];
     controls->ready = joy_data[8] != 0;
+    controls->snapshot = joy_data[9];
   } else {
     controls->ready = false;
   }

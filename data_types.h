@@ -11,7 +11,7 @@ typedef struct init_sensors_s {
 
 typedef struct init_flags_s {
     bool verbose, sensors, escarm, UDP, Ibus;
-    int motor_type, mode, control;
+    int PORT, motor_type, mode, control;
 } init_flags_t;
 
 typedef struct sensors_s {
