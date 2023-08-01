@@ -170,7 +170,7 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t  *init_sensorsIn,
         //initialize UDP
     if (init_flags->UDP){
         Serial.println("Starting UDP Init");
-        udpSuite.init();
+        udpSuite.init(init_flags->PORT);
     }
     Serial.println("Finished Init");
 

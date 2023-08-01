@@ -12,9 +12,10 @@ UDPCom::UDPCom(){
 }
 
 
-void UDPCom::init(){
+void UDPCom::init(int port){
   //following code block connects you to the internet
     active = true;
+    UDPport = port;
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     if (WiFi.waitForConnectResult() != WL_CONNECTED) {
@@ -84,6 +85,7 @@ void UDPCom::sendAck() {
     udp.broadcastTo(blimp_feedback.c_str(), UDPport);
   }
 }
+
 
 
 //unpacks the data into joystick data list

@@ -17,11 +17,10 @@ class UDPCom {
         bool active = false;
     public:
         UDPCom();
-        void init();
+        void init(int port);
         void send_udp_feedback(String dat1, String dat2, String dat3, String dat4);
         void getControllerInputs(controller_t *controls);
         void getCalibrationInputs(float input_data[13]);
         void send_mag_acc(float calibration_data[6]); //const unsigned char *buffer
         void sendAck(); //const unsigned char *buffer
-
 };
