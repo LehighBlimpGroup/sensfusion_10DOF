@@ -2,7 +2,7 @@
  * @Author       : Hanqing Qi
  * @Date         : 2023-08-01 16:19:19
  * @LastEditors  : Hanqing Qi
- * @LastEditTime : 2023-08-01 16:23:56
+ * @LastEditTime : 2023-08-01 17:35:27
  * @FilePath     : /sensfusion_10DOF/examples/espnowbicopter/espnowbicopter.ino
  * @Description  : 
  */
@@ -118,7 +118,7 @@ void setup() {
     
   //initializes systems based on flags and saves flags into the system
   blimp.init(&init_flags, &init_sensors, &feedbackPD);
-
+  
 
   
 

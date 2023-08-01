@@ -2,8 +2,8 @@
  * @Author       : Hanqing Qi
  * @Date         : 2023-08-01 15:54:19
  * @LastEditors  : Hanqing Qi
- * @LastEditTime : 2023-08-01 17:02:22
- * @FilePath     : /sensfusion_10DOF-main/ESPNOW.cpp
+ * @LastEditTime : 2023-08-01 17:35:04
+ * @FilePath     : /undefined/Users/hanqingqi/Desktop/sensfusion_10DOF/ESPNOW.cpp
  * @Description  : This is the file for the ESPNOW class
  */
 
@@ -70,9 +70,10 @@ void ESPNOW::init()
     // Get recv packer info
     esp_now_register_recv_cb(ESPNOW_DataRecv);
     esp_time_now = millis();
-    // Print your local IP address
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
+    // Print your local MAC address
+    Serial.println();
+    Serial.print("ESP Board MAC Address:  ");
+    Serial.println(WiFi.macAddress());
 }
 
 /**
