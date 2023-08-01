@@ -2,8 +2,8 @@
  * @Author       : Hanqing Qi
  * @Date         : 2023-08-01 15:54:11
  * @LastEditors  : Hanqing Qi
- * @LastEditTime : 2023-08-01 16:14:23
- * @FilePath     : /sensfusion_10DOF/ESPNOW.h
+ * @LastEditTime : 2023-08-01 16:47:12
+ * @FilePath     : /sensfusion_10DOF-main/ESPNOW.h
  * @Description  : Header file for ESPNOW.cpp
  */
 
@@ -37,6 +37,6 @@ private:
 
 public:
   ESPNOW();
-  void init(int port);
+  void init();
   void getControllerInputs(controller_t *controls);
 };

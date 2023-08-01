@@ -2,8 +2,8 @@
  * @Author       : Hanqing Qi
  * @Date         : 2023-08-01 15:54:19
  * @LastEditors  : Hanqing Qi
- * @LastEditTime : 2023-08-01 16:18:31
- * @FilePath     : /sensfusion_10DOF/ESPNOW.cpp
+ * @LastEditTime : 2023-08-01 17:02:22
+ * @FilePath     : /sensfusion_10DOF-main/ESPNOW.cpp
  * @Description  : This is the file for the ESPNOW class
  */
 
@@ -24,41 +24,40 @@ void ESPNOW_DataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     esp_time_now = millis();
     esp_ready = false;
     memcpy(&ESPNOW_Input, incomingData, sizeof(ESPNOW_Input));
-    Serial.print("Bytes received: ");
-    Serial.println(len);
-    Serial.print("Data: ");
-    Serial.print(ESPNOW_Input.p1);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p2);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p3);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p4);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p5);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p6);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p7);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p8);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p9);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p10);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p11);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p12);
-    Serial.print("|");
-    Serial.print(ESPNOW_Input.p13);
-    Serial.println();
+    // Serial.print("Bytes received: ");
+    // Serial.println(len);
+    // Serial.print("Data: ");
+    // Serial.print(ESPNOW_Input.p1);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p2);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p3);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p4);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p5);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p6);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p7);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p8);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p9);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p10);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p11);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p12);
+    // Serial.print("|");
+    // Serial.print(ESPNOW_Input.p13);
+    // Serial.println();
     esp_ready = true;
 }
 
-void ESPNOW::init(int port)
+void ESPNOW::init()
 {
-    active = true;
     // Set device as a Wi-Fi Station
     WiFi.mode(WIFI_STA);
     // Init ESP-NOW

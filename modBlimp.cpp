@@ -297,7 +297,7 @@ void ModBlimp::getControllerData(controller_t *controls)
   }
   else if (mode == 2 && init_flags->ESPNOW)
   {
-    ESPNOW.getControllerInputs(controls);
+    espNow.getControllerInputs(controls);
   }
   else
   { // control will be empty if no control input is given
