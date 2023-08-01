@@ -119,6 +119,7 @@ void UDPCom::getControllerInputs(controller_t *controls){
     controls->tz = joy_data[6];
     controls->absz = joy_data[7];
     controls->ready = joy_data[8] != 0;
+    controls->snapshot = joy_data[9];
   } else {
     controls->ready = false;
   }
