@@ -42,7 +42,8 @@ class ModBlimp {
         float groundZ;
         
         UDPCom udpSuite;
-        IBusBM IBus; 
+        IBusBM IBus;
+        ESPNOW espNow; 
 
         volatile unsigned long time_end;
         void escarm(Servo& thrust1, Servo& thrust2);

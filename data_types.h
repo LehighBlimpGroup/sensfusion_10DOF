@@ -10,7 +10,7 @@ typedef struct init_sensors_s {
 } init_sensors_t;
 
 typedef struct init_flags_s {
-    bool verbose, sensors, escarm, UDP, Ibus;
+    bool verbose, sensors, escarm, UDP, Ibus, ESPNOW;
     int PORT, motor_type, mode, control;
 } init_flags_t;
 
