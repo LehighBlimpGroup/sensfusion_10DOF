@@ -603,6 +603,21 @@ void SensFusion::enterTransform(){
   name[2] = (char)'\0';
   
   name[0] = (char)'m';
+  itoa((int)(0),str,16);
+  name[1] = str[0];
+  if ((float)preferences.getFloat(name) == NULL){
+    preferences.end();
+    float transformationMatrixBackup[3][3] = {
+      {1.0f, 0.0f, 0.0f},
+      {0.0f, 1.0f, 0.0f},
+      {0.0f, 0.0f, 1.0f}
+    };
+    float offsetsBackup[3] = {0.0f, 0.0f, 0.0f};
+    saveTransform(offsetsBackup, transformationMatrixBackup);
+
+    preferences.begin("calibration", true); 
+
+  }
   for (int i = 0; i < 3; i ++) {
     for (int j = 0; j < 3; j ++) {
       itoa((int)(i*3 + j),str,16);
@@ -624,6 +639,7 @@ void SensFusion::enterTransform(){
   }
   preferences.end();
 }
+
 void SensFusion::saveTransform(float (&offset)[3], float (&matrix)[3][3]){
   char* name = new char[3];
   char str[256];
