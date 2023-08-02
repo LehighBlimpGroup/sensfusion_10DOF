@@ -66,7 +66,7 @@ class Control_Input:
 
 
 def espnow_init():
-    ser = serial.Serial('/dev/ttyACM1', 115200)
+    ser = serial.Serial('/dev/ttyACM0', 115200)
     return ser
 
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
             x_old = x
 
             if abs(joystick.get_axis(3)) > 0.1:
-                fx = -1 * joystick.get_axis(3)  # left handler: up-down, inverted
+                fx = -.7 * joystick.get_axis(3)  # left handler: up-down, inverted
             else:
                 fx = 0
             if abs(joystick.get_axis(0)) > 0.1:
@@ -156,7 +156,7 @@ if __name__ == "__main__":
             else:
                 snap = 0
                 if abs(joystick.get_axis(2)) > 0.1:
-                    tauz = -2 * joystick.get_axis(2)  # right handler: left-right
+                    tauz = -5 * joystick.get_axis(2)  # right handler: left-right
                 else:
                     tauz = 0
             l_old = left
