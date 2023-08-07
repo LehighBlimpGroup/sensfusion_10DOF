@@ -66,7 +66,7 @@ class Control_Input:
 
 
 def espnow_init():
-    ser = serial.Serial('/dev/ttyACM0', 115200)
+    ser = serial.Serial('COM5', 115200)
     return ser
 
 
@@ -126,8 +126,8 @@ if __name__ == "__main__":
             pygame.event.pump()
             b = joystick.get_button(1)
             x = joystick.get_button(2)
-            left = joystick.get_button(13)
-            right = joystick.get_button(14)
+            left = joystick.get_hat(0) == -1
+            right = joystick.get_hat(0) == 1
             if b == 1 and b_old == 0:
                 b_state = not b_state
             b_old = b
