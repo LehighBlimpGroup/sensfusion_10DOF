@@ -15,6 +15,19 @@ Control_Input ESPNOW_Input;
 
 ESPNOW::ESPNOW()
 {
+    ESPNOW_Input.p1 = 0;
+    ESPNOW_Input.p2 = 0;
+    ESPNOW_Input.p3 = 0;
+    ESPNOW_Input.p4 = 0;
+    ESPNOW_Input.p5 = 0;
+    ESPNOW_Input.p6 = 0;
+    ESPNOW_Input.p7 = 0;
+    ESPNOW_Input.p8 = 0;
+    ESPNOW_Input.p9 = 0;
+    ESPNOW_Input.p10 = 0;
+    ESPNOW_Input.p11 = 0;
+    ESPNOW_Input.p12 = 0;
+    ESPNOW_Input.p13 = 0;
     esp_ready = false;
 }
 

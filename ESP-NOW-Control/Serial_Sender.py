@@ -88,7 +88,7 @@ def esp_now_send(ser, input):
         ser.write(message.encode())
         try:
             incoming = ser.readline().decode(errors='ignore').strip()
-            print("Received Data: " + incoming)
+            #print("Received Data: " + incoming)
         except UnicodeDecodeError:
             print("Received malformed data!")
     except KeyboardInterrupt:
@@ -126,8 +126,9 @@ if __name__ == "__main__":
             pygame.event.pump()
             b = joystick.get_button(1)
             x = joystick.get_button(2)
-            left = joystick.get_hat(0) == -1
-            right = joystick.get_hat(0) == 1
+            left = joystick.get_hat(0)[0] == -1
+            right = joystick.get_hat(0)[0] == 1
+            
             if b == 1 and b_old == 0:
                 b_state = not b_state
             b_old = b
@@ -137,20 +138,22 @@ if __name__ == "__main__":
             x_old = x
 
             if abs(joystick.get_axis(3)) > 0.1:
-                fx = -.7 * joystick.get_axis(3)  # left handler: up-down, inverted
+                fx = -.5 * joystick.get_axis(3)  # left handler: up-down, inverted
             else:
                 fx = 0
             if abs(joystick.get_axis(0)) > 0.1:
-                taux = -0.1 * joystick.get_axis(0)
+                taux = -0.03 * joystick.get_axis(0)
             else:
                 taux = 0
             fz = 0  # -2*joystick.get_axis(1)  # right handler: up-down, inverted
 
             if x_state:
                 if left == 1 and l_old == 0:
+                    print("left")
                     snap += 1
                     tauz = 3.1415 / 4
                 elif right == 1 and r_old == 0:
+                    print("right")
                     snap += 1
                     tauz = -3.1415 / 4
             else:
@@ -167,19 +170,21 @@ if __name__ == "__main__":
             if abs(joystick.get_axis(1)) > 0.15:
                 absz += -(time.time() - time_start) * joystick.get_axis(1)
             if b_state == 1:
-                absz = 0.2
+                absz = 1.2
                 x_state = 0
 
             time_start = time.time()
 
-            # print(
-            #     round(fx, 2),
-            #     round(fz, 2),
-            #     round(taux, 2),
-            #     round(tauz, 2),
-            #     round(absz, 2),
-            #     b_state,
-            # )
+            print(
+                round(fx, 2),
+                round(fz, 2),
+                round(taux, 2),
+                round(tauz, 2),
+                round(absz, 2),
+                b_state,
+                x_state,
+                snap
+            )
 
 
             esp_now_input = Control_Input(
@@ -189,7 +194,7 @@ if __name__ == "__main__":
                 
 
             # state = not state
-            time.sleep(0.005)  # 0.005
+            time.sleep(0.02)  # 0.005
             # while(time.time() - time_start < 0.01):
             # time.sleep(0.001) #0.005
     except KeyboardInterrupt:

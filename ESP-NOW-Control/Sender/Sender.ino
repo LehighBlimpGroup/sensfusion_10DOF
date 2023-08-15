@@ -11,7 +11,7 @@
 #include <WiFi.h>
 
 // MAC addresses of the receivers
-uint8_t broadcastAddress1[] = {0x34, 0x85, 0x18, 0x8D, 0x8B, 0x38}; // Receiver 1
+uint8_t broadcastAddress1[] = {0x34, 0x85, 0x18, 0x8D, 0x8B, 0x38}; // Receiver 1 34:85:18:06:F7:50
 
 // Add MAC addresses for additional receivers here
 // uint8_t broadcastAddress2[] = {0xFF, , , , , }; // Receiver 2
@@ -91,7 +91,6 @@ String data;
 // Main function which is called repeatedly
 void loop()
 {
-  HaveData = false;
   // delay(50);
   while (Serial.available())
   {
@@ -100,13 +99,14 @@ void loop()
     // When '<' is detected, start recording data
     if (c == '<')
     {
-      HaveData = true;
+      HaveData = false;
       isDataStarted = true;
       data = "";
     }
     // When '>' is detected, stop recording data and process it
     else if (c == '>')
     {
+      HaveData = true;
       isDataStarted = false;
       process_data(data);
     }
@@ -117,6 +117,7 @@ void loop()
     }
   }
   if (HaveData) {
+    HaveData = false;
     esp_err_t result = esp_now_send(0, (uint8_t *) &params, sizeof(Control_Input));
 
     if (result == ESP_OK) {

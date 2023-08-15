@@ -487,7 +487,7 @@ void ModBlimp::getOutputs(controller_t *controls, sensors_t *sensors, actuation_
   float fx = clamp(controls->fx, -1, 1);                  // setpoint->bicopter.fx;
   float fz = clamp(controls->fz, 0.1, 2);                 // setpoint->bicopter.fz;
   float maxRadsYaw = .07; //.1f                                 //.175;
-  float magxz = max(fz * tan(maxRadsYaw), fx * l * 0.2f); // limits the yaw based on the magnitude of the force
+  float magxz = max(fz * tan(maxRadsYaw), fx * l * 0.17f); // limits the yaw based on the magnitude of the force
   float taux = clamp(controls->tx, -l + (float)0.01, l - (float)0.01);
   float tauz = clamp(controls->tz, -1, 1) * magxz; // limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
 
