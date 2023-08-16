@@ -138,7 +138,7 @@ if __name__ == "__main__":
             x_old = x
 
             if abs(joystick.get_axis(3)) > 0.1:
-                fx = -.5 * joystick.get_axis(3)  # left handler: up-down, inverted
+                fx = -.8 * joystick.get_axis(3)  # left handler: up-down, inverted
             else:
                 fx = 0
             if abs(joystick.get_axis(0)) > 0.1:
@@ -151,11 +151,11 @@ if __name__ == "__main__":
                 if left == 1 and l_old == 0:
                     print("left")
                     snap += 1
-                    tauz = 3.1415 / 4
+                    tauz += 3.1415 / 4
                 elif right == 1 and r_old == 0:
                     print("right")
                     snap += 1
-                    tauz = -3.1415 / 4
+                    tauz += -3.1415 / 4
             else:
                 snap = 0
                 if abs(joystick.get_axis(2)) > 0.1:
@@ -170,7 +170,7 @@ if __name__ == "__main__":
             if abs(joystick.get_axis(1)) > 0.15:
                 absz += -(time.time() - time_start) * joystick.get_axis(1)
             if b_state == 1:
-                absz = 1.2
+                absz = 3
                 x_state = 0
 
             time_start = time.time()

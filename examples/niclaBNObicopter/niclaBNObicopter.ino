@@ -88,7 +88,7 @@ feedback_t feedbackPD = {
   .kppitch = 0,
   .kdpitch = 0,
   .kpyaw = 3.0f,
-  .kdyaw = -120.0f,//-70//5f,
+  .kdyaw = -150.0f,//-70//5f,
 
   .kpx = 0,
   .kdx = 0,
@@ -120,7 +120,7 @@ float barorate = 50;
 bool baroOn = false;
 time_t barotime;
 
-
+bool bnoOn = false;
 
 void setup() {
   
@@ -134,7 +134,9 @@ void setup() {
   {
     /* There was a problem detecting the BNO055 ... check your connections */
     Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-    while (1);
+    
+  } else{
+    bnoOn = true;
   }
   /* Initialise the sensor */
   int countTries = 0;
@@ -167,34 +169,7 @@ void setup() {
     refZ = sensors.groundZ;
     rawZ = sensors.groundZ;
   }
-  // if(!bmp.begin())
-  // {
-  //   /* There was a problem detecting the BMP085 ... check your connections */
-  //   Serial.print("Ooops, no BMP085 detected ... Check your wiring or I2C ADDR!");
-  //   while(1);
-  // } else {
-  //   sensors_event_t event;
-  //   bmp.getEvent(&event);
-  //   oldZ = bmp.pressureToAltitude(1013.25, event.pressure);
-  //   // baro_time = millis();
-  //   delay(200);
-  //   while(true){
-  //     Serial.println(oldZ);
-  //     float newZ = bmp.pressureToAltitude(1013.25, event.pressure);
-  //     if (abs(oldZ - newZ) > 5){
-  //       oldZ = oldZ * .8 + newZ * .2;
-  //     }
-  //     else {
-  //       break;
-  //     }
-  //     delay(100);
-  //   }
-  //   sensors.groundZ = oldZ;
-  //   refZ = oldZ;
-  //   rawZ = oldZ;
-  // }
-  // Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" hPa");
-  // Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" hPa");
+  controls.snapshot = 0;
 
   delay(1000);
 
@@ -230,59 +205,9 @@ void loop() {
   //    contrains: fx, fy, fz, absz, tx, ty, tz, ready
   */
   blimp.getControllerData(&controls);
-  blimp.IBus.loop();
-  int cx = blimp.IBus.readChannel(0);
-  int cy = blimp.IBus.readChannel(1);
-  // if (controls.snapshot != 0){ // code is in abs yaw following mode
-  //   if (snapon == false){
-  //     //absoluteyawave = sensors.yaw;
-  //     snapon = true;
-  //   }
-  //   if (cx !=0 || cy != 0){
-  //     //balloon is detected
-  //     // float relativeyaw = ((((float)cx) /120.0f-.5)*50.0f);
-  //     // float absoluteyaw = relativeyaw + sensors.yaw;
-  //     // if (absoluteyaw - absoluteyawave > 3.1416f){
-  //     //   absoluteyaw -= 6.283f;
-  //     // }
-  //     // else if (absoluteyaw - absoluteyawave < -3.1416f){
-  //     //   absoluteyaw += 6.283f;
-  //     // }
-  //     // absoluteyawave = absoluteyawave * .9 + absoluteyaw * .1;
-      
-  //     // if (absoluteyawave > 3.1416f){
-  //     //   absoluteyawave -= 6.283f;
-  //     // }
-  //     // else if (absoluteyawave < -3.1416f){
-  //     //   absoluteyawave += 6.283f;
-  //     // }
-  //     absoluteyawave = absoluteyawave * .975 + (((float)cx) /120.0f-.5)*5.0f * .025;
-  //     controls.tz = absoluteyawave;//controls.tz + absoluteyawave - sensors.yaw;
-        
 
-
-  //   } else {
-  //     //no balloon detected
-  //     controls.tz = absoluteyawave;//controls.tz + absoluteyawave - sensors.yaw;
-
-  //   }
-    
-  // } else {
-  //   snapon = false;
-  //   //absoluteyawave = sensors.yaw;
-  // } 
-  // Serial.print(cx);
-  // Serial.print(", ");
-  // Serial.print(absoluteyawave);
-  // Serial.print(", ");
-  // Serial.print(controls.tz);
-  // Serial.print(", ");
-  // Serial.println(controls.snapshot);
-
-
-  // controls.ready = true;
-  // controls.fz = .3;
-  // controls.fx = .5;
+  controlAlgorithm(&controls, &sensors);
+  
 
   /* TODO- NOT IMPLEMENTED
   //    optionally you can get the lastest information about the controller as raw values labeled as I1, I2, I3...
@@ -333,6 +258,76 @@ void loop() {
 
 }
 
+time_t snaptime;
+
+float aveyaw = 0;
+float tempyaw = 0;
+int oldsnap = 0;
+float ballz = 0;
+
+void controlAlgorithm(controller_t *controls, sensors_t *sensors) {
+  blimp.IBus.loop();
+  int cx = blimp.IBus.readChannel(0);
+  int cy = blimp.IBus.readChannel(1);
+  int sig = blimp.IBus.readChannel(2);
+  
+  if (controls->snapshot != 0 ) {
+    controls->snapshot = sig;
+    controls->tz  = (float)((cx-120)/3)*3.14159f/180.0f;
+    ballz += (float)((cx-120)/120*2);
+    if (abs(ballz) > 15){
+      ballz = 15 * ballz/abs(ballz);
+    }
+    controls->fz = ballz;
+    if (controls->snapshot != oldsnap){
+      snaptime = millis();
+      tempyaw = sensors->yaw + controls->tz;//controls->tz;//
+      oldsnap = controls->snapshot;
+      while (tempyaw > 3.1416f){
+        tempyaw -= 6.283f;
+      }
+      while (tempyaw < -3.1416f){
+        tempyaw += 6.283f;
+      }
+    } else if (millis() - snaptime > 5000){// if time since last snap > 5 seconds do patterned walk on yaw
+      tempyaw = sensors->yaw + 3.1415/4.0f;
+      snaptime = millis();
+
+    }
+    controls->tz = 0;
+    float tempdiff = -1*(tempyaw - sensors->yaw);
+    while (tempdiff > 3.1416f){
+      tempdiff -= 6.283f;
+    }
+    while (tempdiff < -3.1416f){
+      tempdiff += 6.283f;
+    }
+    // float dyaw = tempdiff - oldyaw;
+    // oldyaw = tempdiff;
+    // float kdabsyaw = 1;
+    float actyaw = clamp(tempdiff,-1,1);//- dyaw*kdabsyaw;
+    
+    // actyaw = actyaw;
+    aveyaw = aveyaw * 0 + (actyaw) * 1;
+  } else {
+    tempyaw = sensors->yaw;
+    aveyaw = 0;
+    oldsnap = 0;
+  }
+
+  Serial.print(controls->snapshot);
+  Serial.print(", ");
+  Serial.print(ballz);
+  Serial.print(", ");
+  Serial.print(aveyaw);
+  Serial.print(", ");
+  Serial.print(sensors->yaw);
+  Serial.print(", ");
+  Serial.println(tempyaw);
+  
+  
+}
+
 /*
   -----------------------------------------------------------------------------------------------------
   EXAMPLE FUNCTIONS for full customization on outputs
@@ -340,27 +335,31 @@ void loop() {
       or just implement it in this program
   -----------------------------------------------------------------------------------------------------
 */
-float aveyaw = 0;
-float tempyaw = 0;
-int oldsnap = 0;
 
 void getLatestSensorData(sensors_t *sensors) {
-  sensors_event_t orientationData, angVelocityData, linearAccelData;
-  
-  
-  bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
-  sensors->yaw = orientationData.orientation.x* 3.1416f/180.0f;
-  if (sensors->yaw > 3.1416f){
-    sensors->yaw -= 3.1416f*2;
+  if (bnoOn){
+    sensors_event_t orientationData, angVelocityData;//, linearAccelData;
+    bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
+    sensors->yaw = orientationData.orientation.x* 3.1416f/180.0f;
+    if (sensors->yaw > 3.1416f){
+      sensors->yaw -= 3.1416f*2;
+    }
+    sensors->roll = orientationData.orientation.y* 3.1416f/180.0f;
+    sensors->pitch = orientationData.orientation.z* 3.1416f/180.0f;
+    bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
+    sensors->yawrate = sensors->yawrate *.7 + angVelocityData.gyro.z* 3.1416f/180.0f * .3;
+    sensors->rollrate = sensors->rollrate *.7+ angVelocityData.gyro.y* 3.1416f/180.0f* .3;
+    sensors->pitchrate = sensors->pitchrate *.7+  angVelocityData.gyro.x* 3.1416f/180.0f* .3;
+    //bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
+  } else {
+    sensors->yaw = 0;
+    sensors->roll = 0;
+    sensors->pitch = 0;
+    
+    sensors->yawrate = 0;
+    sensors->rollrate = 0;
+    sensors->pitchrate = 0;
   }
-  sensors->roll = orientationData.orientation.y* 3.1416f/180.0f;
-  sensors->pitch = orientationData.orientation.z* 3.1416f/180.0f;
-  bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
-  sensors->yawrate = sensors->yawrate *.7 + angVelocityData.gyro.z* 3.1416f/180.0f * .3;
-  sensors->rollrate = sensors->rollrate *.7+ angVelocityData.gyro.y* 3.1416f/180.0f* .3;
-  sensors->pitchrate = sensors->pitchrate *.7+  angVelocityData.gyro.x* 3.1416f/180.0f* .3;
-  bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
-
   oldZ = rawZ;
   time_t newtime = micros();
   int barotimer = newtime - barotime; 
@@ -418,47 +417,7 @@ void addFeedback(controller_t *controls, sensors_t *sensors) {
     
     //yaw feedback
     if (PDterms->yaw) { 
-      if (controls->snapshot != 0 ) {
-        if (controls->snapshot != oldsnap){
-          tempyaw = sensors->yaw + controls->tz;
-          oldsnap = controls->snapshot;
-          while (tempyaw > 3.1416f){
-            tempyaw -= 6.283f;
-          }
-          while (tempyaw < -3.1416f){
-            tempyaw += 6.283f;
-          }
-        } 
-        controls->tz = 0;
-        float tempdiff = -1*(tempyaw - sensors->yaw);
-        while (tempdiff > 3.1416f){
-          tempdiff -= 6.283f;
-        }
-        while (tempdiff < -3.1416f){
-          tempdiff += 6.283f;
-        }
-        // float dyaw = tempdiff - oldyaw;
-        // oldyaw = tempdiff;
-        // float kdabsyaw = 1;
-        float actyaw = clamp(tempdiff,-1,1);//- dyaw*kdabsyaw;
-        
-        // actyaw = actyaw;
-        aveyaw = aveyaw * 0 + (actyaw) * 1;
-      } else {
-        tempyaw = sensors->yaw;
-        aveyaw = 0;
-        oldsnap = 0;
-      }
-
-      Serial.print(controls->snapshot);
-      Serial.print(", ");
-      Serial.print(oldsnap);
-      Serial.print(", ");
-      Serial.print(aveyaw);
-      Serial.print(", ");
-      Serial.print(sensors->yaw);
-      Serial.print(", ");
-      Serial.println(tempyaw);
+      
       controls->tz = controls->tz + aveyaw * PDterms->kpyaw - sensors->yawrate*PDterms->kdyaw;
       
     }
