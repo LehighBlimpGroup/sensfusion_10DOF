@@ -16,6 +16,8 @@ import socket
 import struct
 import math
 
+PORT = 'COM3'
+
 
 class Control_Input:
     def __init__(self, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13):
@@ -66,7 +68,7 @@ class Control_Input:
 
 
 def espnow_init():
-    ser = serial.Serial('COM5', 115200)
+    ser = serial.Serial(PORT, 115200)
     return ser
 
 
@@ -82,7 +84,6 @@ def joystick_init():
 
 def esp_now_send(ser, input):
     try:
-        
         # NOTE - The daley here need to match the delay in the ESP32 receiver code
         message = str(input)
         ser.write(message.encode())
