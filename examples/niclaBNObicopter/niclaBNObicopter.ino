@@ -267,19 +267,45 @@ float ballz = 0;
 
 void controlAlgorithm(controller_t *controls, sensors_t *sensors) {
   blimp.IBus.loop();
+  if (false){
+    randomWalk(controls, sensors);
+  } else {
+    followBall(controls, sensors);
+  }
+}
+
+time_t randtime = 0;
+float randYaw = 0;
+void randomWalk(controller_t *controls, sensors_t *sensors){
+  // int cx = blimp.IBus.readChannel(0);
+  // int cy = blimp.IBus.readChannel(1);
+  // int sig = blimp.IBus.readChannel(2);
+  // int tof = blimp.IBus.readChannel(3);
+  // time_t currTimme = millis();
+  // if (currtime-randtime > 10 * 1000){
+
+  // }
+  // if (tof < 1000) {
+  //   controls->fx = 0;
+  //   tempYaw = sensors->yaw - 3.1416f
+  // }
+
+}
+
+void followBall(controller_t *controls, sensors_t *sensors){
   int cx = blimp.IBus.readChannel(0);
   int cy = blimp.IBus.readChannel(1);
   int sig = blimp.IBus.readChannel(2);
-  
+  int tof = blimp.IBus.readChannel(3);
   if (controls->snapshot != 0 ) {
     controls->snapshot = sig;
     controls->tz  = (float)((cx-120)/3)*3.14159f/180.0f;
-    ballz += (float)((cx-120)/120*2);
-    if (abs(ballz) > 15){
-      ballz = 15 * ballz/abs(ballz);
-    }
     controls->fz = ballz;
-    if (controls->snapshot != oldsnap){
+    if (controls->snapshot != oldsnap) {
+      ballz += (float)((cy-120)/120*2);
+      if (abs(ballz) > 15){
+        ballz = 15 * ballz/abs(ballz);
+      }
       snaptime = millis();
       tempyaw = sensors->yaw + controls->tz;//controls->tz;//
       oldsnap = controls->snapshot;
@@ -319,13 +345,11 @@ void controlAlgorithm(controller_t *controls, sensors_t *sensors) {
   Serial.print(", ");
   Serial.print(ballz);
   Serial.print(", ");
-  Serial.print(aveyaw);
+  Serial.print(cy);
   Serial.print(", ");
-  Serial.print(sensors->yaw);
+  Serial.print(cx);
   Serial.print(", ");
-  Serial.println(tempyaw);
-  
-  
+  Serial.println(tof);
 }
 
 /*
@@ -347,7 +371,7 @@ void getLatestSensorData(sensors_t *sensors) {
     sensors->roll = orientationData.orientation.y* 3.1416f/180.0f;
     sensors->pitch = orientationData.orientation.z* 3.1416f/180.0f;
     bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
-    sensors->yawrate = sensors->yawrate *.7 + angVelocityData.gyro.z* 3.1416f/180.0f * .3;
+    sensors->yawrate = sensors->yawrate *.9 + angVelocityData.gyro.z* 3.1416f/180.0f * .1;
     sensors->rollrate = sensors->rollrate *.7+ angVelocityData.gyro.y* 3.1416f/180.0f* .3;
     sensors->pitchrate = sensors->pitchrate *.7+  angVelocityData.gyro.x* 3.1416f/180.0f* .3;
     //bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);

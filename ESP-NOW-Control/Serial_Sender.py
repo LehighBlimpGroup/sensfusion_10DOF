@@ -88,7 +88,7 @@ def esp_now_send(ser, input):
         ser.write(message.encode())
         try:
             incoming = ser.readline().decode(errors='ignore').strip()
-            #print("Received Data: " + incoming)
+            print("Received Data: " + incoming)
         except UnicodeDecodeError:
             print("Received malformed data!")
     except KeyboardInterrupt:
@@ -175,16 +175,16 @@ if __name__ == "__main__":
 
             time_start = time.time()
 
-            print(
-                round(fx, 2),
-                round(fz, 2),
-                round(taux, 2),
-                round(tauz, 2),
-                round(absz, 2),
-                b_state,
-                x_state,
-                snap
-            )
+            # print(
+            #     round(fx, 2),
+            #     round(fz, 2),
+            #     round(taux, 2),
+            #     round(tauz, 2),
+            #     round(absz, 2),
+            #     b_state,
+            #     x_state,
+            #     snap
+            # )
 
 
             esp_now_input = Control_Input(
