@@ -21,7 +21,7 @@ flags to be used in the init
 init_flags_t init_flags = {
   .verbose = false,
   .sensors = false,
-  .escarm = false,
+  .escarm = true,
   .UDP = false,
   .Ibus = true,
   .ESPNOW = true,
@@ -173,7 +173,7 @@ void setup() {
 
   delay(100);
 
-  Serial.println(10);
+  // Serial.println(10);
 
 }
 float absoluteyawave = 0;
@@ -189,7 +189,7 @@ void loop() {
   //    will return 0 for all sensors if sensors == false
   */
   getLatestSensorData(&sensors);
-  Serial.println(10);
+  // Serial.println(10);
 
   sensors.pitch =  sensors.pitch -3.1416 - 0.14;//hack to invert pitch due to orientation of the sensor
   while (sensors.pitch > 3.1416) {
@@ -226,11 +226,11 @@ void loop() {
   addFeedback(&controls, &sensors); //this function is implemented here for you to customize
 
 
-  Serial.print(controls.fz);
-  Serial.print(", ");
-  Serial.print(controls.tz);
-  Serial.print(", ");
-  Serial.println(sensors.yawrate*100);
+  // Serial.print(controls.fz);
+  // Serial.print(", ");
+  // Serial.print(controls.tz);
+  // Serial.print(", ");
+  // Serial.println(sensors.yawrate*100);
 
   // Serial.print(sensors.yaw);
   // Serial.print(", ");
@@ -270,14 +270,15 @@ float ballz = 0;
 void controlAlgorithm(controller_t *controls, sensors_t *sensors) {
   blimp.IBus.loop();
   
-  randomWalk(controls, sensors);
+  //randomWalk(controls, sensors);
   
-  // followBall(controls, sensors);
+  followBall(controls, sensors);
     
 }
 
 time_t randtime = 0;
 float randYaw = 0;
+
 void randomWalk(controller_t *controls, sensors_t *sensors){
   // int cx = blimp.IBus.readChannel(0);
   // int cy = blimp.IBus.readChannel(1);
@@ -289,10 +290,10 @@ void randomWalk(controller_t *controls, sensors_t *sensors){
   // }
   
   if (controls->snapshot != 0 ) {
-    if (tof < 1500) {
-      tempYaw = sensors->yaw - 3.1416f
+    if (tof < 1300) {
+      randYaw = sensors->yaw + 2.0f* 3.1416f/3.0f ;
     }
-    float tempdiff = -1*(tempyaw - sensors->yaw);
+    float tempdiff = -1*(randYaw - sensors->yaw);
     while (tempdiff > 3.1416f){
       tempdiff -= 6.283f;
     }
@@ -310,12 +311,12 @@ void randomWalk(controller_t *controls, sensors_t *sensors){
     // actyaw = actyaw;
     aveyaw = aveyaw * 0 + (actyaw) * 1;
   }
-  Serial.print(actyaw);
+  Serial.print(aveyaw);
   Serial.print(",");
   Serial.println(tof);
 }
 
-
+time_t  tofTime = 0;
 
 void followBall(controller_t *controls, sensors_t *sensors){
   int cx = blimp.IBus.readChannel(0);
@@ -338,8 +339,23 @@ void followBall(controller_t *controls, sensors_t *sensors){
         tempyaw += 6.283f;
       }
     } else if (millis() - snaptime > 8000){// if time since last snap > 5 seconds do patterned walk on yaw
-      tempyaw = sensors->yaw + 3.1415/4.0f;
-      snaptime = millis();
+      // tempyaw = sensors->yaw + 3.1415/4.0f;
+      // snaptime = millis();
+      controls->fz = (sensors->groundZ+3) - sensors->estimatedZ;
+
+      if (tof < 1500) {
+        tofTime = millis();
+        tempyaw = sensors->yaw + 2.0f* 3.1416f/3.0f ;
+        while (tempyaw > 3.1416f){
+          tempyaw -= 6.283f;
+        }
+        while (tempyaw < -3.1416f){
+          tempyaw += 6.283f;
+        }
+      }
+      if (millis() - tofTime <3000){
+        controls->fx  = -0.3f;
+      }
 
     }
     controls->tz = 0;
@@ -366,15 +382,15 @@ void followBall(controller_t *controls, sensors_t *sensors){
     oldsnap = 0;
   }
 
-  // Serial.print(controls->snapshot);
-  // Serial.print(", ");
-  // Serial.print(ballz);
-  // Serial.print(", ");
-  // Serial.print(cy);
-  // Serial.print(", ");
-  // Serial.print(cx);
-  // Serial.print(", ");
-  // Serial.println(tof);
+  Serial.print(controls->snapshot);
+  Serial.print(", ");
+  Serial.print(ballz);
+  Serial.print(", ");
+  Serial.print(aveyaw);
+  Serial.print(", ");
+  Serial.print(millis() - snaptime);
+  Serial.print(", ");
+  Serial.println(tof);
 }
 
 /*

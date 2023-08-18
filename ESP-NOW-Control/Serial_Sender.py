@@ -16,7 +16,7 @@ import socket
 import struct
 import math
 
-PORT = 'COM3'
+PORT = 'COM5'
 
 
 class Control_Input:
@@ -189,7 +189,7 @@ if __name__ == "__main__":
 
 
             esp_now_input = Control_Input(
-                0, fx, fy, fz, taux, tauy, tauz, absz, int(not b_state), snap, 0, 0, 0
+                0, fx, fy, fz, taux, tauy, tauz, absz, int(not b_state), int(x_state), 0, 0, 0
             )
             esp_now_send(sock, esp_now_input)
                 
