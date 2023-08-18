@@ -6,6 +6,7 @@
 #include <math.h>
 #include <IBusBM.h>
 #include <ESP32Servo.h>
+#include <ESPNOW.h>
 
 
 #define SERVO1 D2
@@ -42,7 +43,7 @@ class ModBlimp {
         float groundZ;
         
         UDPCom udpSuite;
-        IBusBM IBus; 
+        ESPNOW espNow; 
 
         volatile unsigned long time_end;
         void escarm(Servo& thrust1, Servo& thrust2);
@@ -50,6 +51,7 @@ class ModBlimp {
         void initSensors(init_sensors_t  *sensors); //attempts to connect to the sensors using sensorswuite.
 
     public:
+        IBusBM IBus;
         SensFusion sensorSuite;
         ModBlimp(); //constructor
 

@@ -1,3 +1,12 @@
+/*
+ * @Author       : Hanqing Qi
+ * @Date         : 2023-08-01 16:19:19
+ * @LastEditors  : Hanqing Qi
+ * @LastEditTime : 2023-08-01 17:35:27
+ * @FilePath     : /sensfusion_10DOF/examples/espnowbicopter/espnowbicopter.ino
+ * @Description  : 
+ */
+
 #include "modBlimp.h"
 
 ModBlimp blimp;
@@ -16,14 +25,14 @@ flags to be used in the init
 */
 init_flags_t init_flags = {
   .verbose = false,
-  .sensors = true,
+  .sensors = false,
   .escarm = false,
   .UDP = false,
-  .Ibus = true,
-  .ESPNOW = false,
+  .Ibus = false,
+  .ESPNOW = true,
   .PORT = 1333,
-  .motor_type = 1,
-  .mode = 1,
+  .motor_type = 0,
+  .mode = 2,
   .control = 0,
 };
 
@@ -109,7 +118,7 @@ void setup() {
     
   //initializes systems based on flags and saves flags into the system
   blimp.init(&init_flags, &init_sensors, &feedbackPD);
-
+  
 
   
 
@@ -136,7 +145,9 @@ void loop() {
   //    contrains: fx, fy, fz, absz, tx, ty, tz, ready
   */
   blimp.getControllerData(&controls);
-
+  // Serial.print(controls.ready);
+  // Serial.print(",");
+  // Serial.println(controls.absz);
 
   /* TODO- NOT IMPLEMENTED
   //    optionally you can get the lastest information about the controller as raw values labeled as I1, I2, I3...

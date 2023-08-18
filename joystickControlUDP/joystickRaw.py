@@ -165,7 +165,7 @@ if __name__ == "__main__":
                 state = 0
             
             #state = not state
-            time.sleep(0.005) #0.005
+            time.sleep(0.02) #0.005
             #while(time.time() - time_start < 0.01):
                 #time.sleep(0.001) #0.005
     except KeyboardInterrupt:
