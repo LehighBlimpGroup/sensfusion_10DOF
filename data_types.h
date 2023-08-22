@@ -33,6 +33,13 @@ typedef struct controller_s {
     int snapshot;
 } controller_t;
 
+typedef struct raw_s {
+    float data[11];
+    bool ready;
+    int flag;
+    
+} raw_t;
+
 typedef struct actuation_s {
     float m1;
     float m2;

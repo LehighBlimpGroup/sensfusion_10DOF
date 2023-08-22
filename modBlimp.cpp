@@ -110,12 +110,16 @@ void ModBlimp::initDefault()
 
 HardwareSerial MySerial0(0);
 
-void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t *init_sensorsIn, feedback_t *feedbackPDIn)
-{ // sets up the control flags in the system
-  // save flags
+void ModBlimp::setFlags(init_flags_t *init_flagsIn, init_sensors_t *init_sensorsIn, feedback_t *feedbackPDIn){
   init_sensors = init_sensorsIn;
   init_flags = init_flagsIn;
   PDterms = feedbackPDIn;
+}
+
+void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t *init_sensorsIn, feedback_t *feedbackPDIn)
+{ // sets up the control flags in the system
+  // save flags
+  setFlags(init_flagsIn, init_sensorsIn, feedbackPDIn);
   time_end = millis();
 
   // initialize serial
@@ -269,6 +273,39 @@ void ModBlimp::getLatestSensorData(sensors_t *sensors)
   }
   // recieve data and place it into the sensor_t data_type
   return;
+}
+
+
+void ModBlimp::getControllerRaws(raw_t *raws)
+{
+  // check for which flag for controller is being used
+  int mode = init_flags->mode;
+  // access IBUS or UDP to get data
+  if (mode == 0 && init_flags->UDP)
+  { // UDP
+    udpSuite.getControllerRaws(raws);
+  }
+  else if (mode == 1 && init_flags->Ibus)
+  { // TODO: IBUS
+    IBus.loop();// ibus integers only two bytes (inclusive) [0, 65535] 2**16
+    raws->flag = IBus.readChannel(0);
+    raws->ready = IBus.readChannel(1);
+    for (int x = 0; x < 11; x ++ ){
+      raws->data[x] = IBus.readChannel(x + 2);
+    }
+  }
+  else if (mode == 2 && init_flags->ESPNOW)
+  {
+    espNow.getControllerRaws(raws);
+  }
+  else
+  { // control will be empty if no control input is given
+    raws->flag = 0;
+    raws->ready = false;
+    for (int x = 0; x < 11; x ++ ){
+      raws->data[x] = 0; 
+    }
+  }
 }
 
 void ModBlimp::getControllerData(controller_t *controls)

@@ -11,7 +11,7 @@
 #include <WiFi.h>
 
 // MAC addresses of the receivers
-uint8_t broadcastAddress1[] = {0x34, 0x85, 0x18, 0x8D, 0x8B, 0x38}; // Receiver 1 34:85:18:06:F7:50
+uint8_t broadcastAddress1[] = {0x34, 0x85, 0x18, 0x8D, 0x8B, 0x38}; // Receiver 1 {0x34, 0x85, 0x18, 0x8D, 0x8B, 0x38} reciever 2: 8E:1E:C0
 
 // Add MAC addresses for additional receivers here
 // uint8_t broadcastAddress2[] = {0xFF, , , , , }; // Receiver 2

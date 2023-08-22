@@ -119,3 +119,38 @@ void ESPNOW::getControllerInputs(controller_t *controls)
     }
     return;
 }
+
+/**
+ * @description: This function gets the controller inputs from the ESPNOW
+ * @param       {raw_t} *controls:
+ * @return      {*}
+ */
+void ESPNOW::getControllerRaws(raw_t *raws)
+{
+
+    // Serial.print(esp_ready);
+    // Serial.print(',');
+    // Serial.println(millis() - esp_time_now);
+    if (esp_ready && millis() - esp_time_now < delayMS)
+    {
+        raws->flag = (int)ESPNOW_Input.p1;
+        raws->ready = (int)ESPNOW_Input.p2 == 1;
+        raws->data[0] = ESPNOW_Input.p3;
+        raws->data[1] = ESPNOW_Input.p4;
+        raws->data[2] = ESPNOW_Input.p5;
+        raws->data[3] = ESPNOW_Input.p6;
+        raws->data[4] = ESPNOW_Input.p7;
+        raws->data[5] = ESPNOW_Input.p8;
+        raws->data[6] = ESPNOW_Input.p9;
+        raws->data[7] = ESPNOW_Input.p10;
+        raws->data[8] = ESPNOW_Input.p11;
+        raws->data[9] = ESPNOW_Input.p12;
+        raws->data[10] = ESPNOW_Input.p13;
+        
+    }
+    else
+    {
+        raws->ready = false;
+    }
+    return;
+}

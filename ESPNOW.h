@@ -39,4 +39,5 @@ public:
   ESPNOW();
   void init();
   void getControllerInputs(controller_t *controls);
+  void getControllerRaws(raw_t *raws);
 };

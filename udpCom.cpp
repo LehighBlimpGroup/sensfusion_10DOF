@@ -137,3 +137,30 @@ void UDPCom::getCalibrationInputs(float input_data[13]){
   }
   return;
 }
+
+
+//takes saved joystick data and puts it into the interfaceable packet.
+//    also makes sure that the data has been recieved within the last second 
+//    to prevent drone from flying away if losing controller connection
+void UDPCom::getControllerRaws(raw_t *raws){
+  
+  if (joy_ready && millis() - time_now < delayMS){
+    raws->flag = joy_data[0];
+    raws->ready = joy_data[1] != 0;
+    raws->data[0] = joy_data[2];
+    raws->data[1] = joy_data[3];
+    raws->data[2] = joy_data[4];
+    raws->data[3] = joy_data[5];
+    raws->data[4] = joy_data[6];
+    raws->data[5] = joy_data[7];
+    raws->data[6] = joy_data[8];
+    raws->data[7] = joy_data[9];
+    raws->data[8] = joy_data[10];
+    raws->data[9] = joy_data[11];
+    raws->data[10] = joy_data[12];
+  } else {
+    raws->ready = false;
+  }
+  
+  return;
+}
