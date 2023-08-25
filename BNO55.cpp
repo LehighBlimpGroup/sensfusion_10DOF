@@ -23,7 +23,7 @@ void BNO55::init(){
     
 }
 
-void BNO55::updateSensors(sensors_t *sensors){
+void BNO55::updateSensors(sensors_t *sensors, sensor_weights_t *weights){
     // Serial.println("BNO Update!");
 
   if (bnoOn){
@@ -36,9 +36,9 @@ void BNO55::updateSensors(sensors_t *sensors){
     sensors->roll = orientationData.orientation.y* 3.1416f/180.0f;
     sensors->pitch = orientationData.orientation.z* 3.1416f/180.0f;
     bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
-    sensors->yawrate = sensors->yawrate *.7 + angVelocityData.gyro.z* 3.1416f/180.0f * .3;
-    sensors->rollrate = sensors->rollrate *.7+ angVelocityData.gyro.y* 3.1416f/180.0f* .3;
-    sensors->pitchrate = sensors->pitchrate *.7+  angVelocityData.gyro.x* 3.1416f/180.0f* .3;
+    sensors->yawrate = sensors->yawrate *weights->yawRateGamma + angVelocityData.gyro.z* 3.1416f/180.0f * (1- weights->yawRateGamma);
+    sensors->rollrate = sensors->rollrate *weights->rollRateGamma+ angVelocityData.gyro.y* 3.1416f/180.0f* (1- weights->rollRateGamma);
+    sensors->pitchrate = sensors->pitchrate *weights->pitchRateGamma+  angVelocityData.gyro.x* 3.1416f/180.0f* (1- weights->pitchRateGamma);
     //bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
   } else {
     sensors->yaw = 0;

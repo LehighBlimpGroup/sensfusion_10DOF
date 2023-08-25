@@ -143,6 +143,7 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t *init_sensorsIn, 
   ESP32PWM::allocateTimer(1);
   ESP32PWM::allocateTimer(2);
   ESP32PWM::allocateTimer(3);
+  if (init_flags->control == 0) {
   servo1.setPeriodHertz(50); // Standard 50hz servo
   servo2.setPeriodHertz(50); // Standard 50hz servo
   servo1.attach(SERVO1, 450, 2550);
@@ -160,6 +161,17 @@ void ModBlimp::init(init_flags_t *init_flagsIn, init_sensors_t *init_sensorsIn, 
     {
       escarm(thrust1, thrust2);
     }
+  }
+  } else if (init_flags->control == 2) {
+    servo1.attach(SERVO1, 1000, 2000);
+    servo2.attach(SERVO2, 1000, 2000);
+    servo1.setPeriodHertz(50); // Standard 50hz servo
+    servo2.setPeriodHertz(50); // Standard 50hz servo
+    thrust1.attach(THRUST1, 1000, 2000);
+    thrust2.attach(THRUST2, 1000, 2000);
+    thrust1.setPeriodHertz(55);
+    thrust2.setPeriodHertz(55);
+
   }
 
   // initialize sensors
@@ -574,37 +586,55 @@ void ModBlimp::getOutputs(controller_t *controls, sensors_t *sensors, actuation_
 
 void ModBlimp::executeOutputs(actuation_t *outputs)
 {
+  if (init_flags->control == 0){
+    servo1.write((int)(outputs->s1 * 180));
+    servo2.write((int)((1 - outputs->s2) * 180));
+    if (init_flags->motor_type == 0)
+    {
+      if (outputs->ready)
+      {
+        thrust1.writeMicroseconds((int)((outputs->m1) * 900 + 1100));
+        thrust2.writeMicroseconds((int)((outputs->m2) * 900 + 1100));
+      }
+      else
+      {
 
-  servo1.write((int)(outputs->s1 * 180));
-  servo2.write((int)((1 - outputs->s2) * 180));
-  if (init_flags->motor_type == 0)
-  {
-    if (outputs->ready)
-    {
-      thrust1.writeMicroseconds((int)((outputs->m1) * 900 + 1100));
-      thrust2.writeMicroseconds((int)((outputs->m2) * 900 + 1100));
+        thrust1.writeMicroseconds((int)0);
+        thrust2.writeMicroseconds((int)0);
+      }
     }
-    else
+    else if (init_flags->motor_type == 1)
     {
+      if (outputs->ready)
+      {
+        analogWrite(THRUST1, (int)(0 + (outputs->m1) * 255));
+        analogWrite(THRUST2, (int)(0 + (outputs->m2) * 255));
+      }
+      else
+      {
+        analogWrite(THRUST1, (int)0);
+        analogWrite(THRUST2, (int)0);
+      }
+    }
+    time_end = millis();
+  }
+  else if (init_flags->control == 2){
+      if (outputs->ready)
+      {
+        analogWrite(THRUST1, (int)(0 + (outputs->m1) * 255));
+        analogWrite(THRUST2, (int)(0 + (outputs->m2) * 255));
+        analogWrite(SERVO1, (int)(0 + (outputs->s1) * 255));
+        analogWrite(SERVO2, (int)(0 + (outputs->s2) * 255));
+      }
+      else
+      {
+        analogWrite(THRUST1, (int)0);
+        analogWrite(THRUST2, (int)0);
+        analogWrite(SERVO1, (int)0);
+        analogWrite(SERVO2, (int)0);
+      }
+  }
 
-      thrust1.writeMicroseconds((int)0);
-      thrust2.writeMicroseconds((int)0);
-    }
-  }
-  else if (init_flags->motor_type == 1)
-  {
-    if (outputs->ready)
-    {
-      analogWrite(THRUST1, (int)(0 + (outputs->m1) * 255));
-      analogWrite(THRUST2, (int)(0 + (outputs->m2) * 255));
-    }
-    else
-    {
-      analogWrite(THRUST1, (int)0);
-      analogWrite(THRUST2, (int)0);
-    }
-  }
-  time_end = millis();
 }
 void ModBlimp::send_udp_feedback(String dat1, String dat2, String dat3, String dat4)
 {

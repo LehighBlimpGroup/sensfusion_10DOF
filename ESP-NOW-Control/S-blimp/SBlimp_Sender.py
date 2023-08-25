@@ -20,19 +20,19 @@ PORT = 'COM5'
 
 feedbackPD = { "roll" : 0,
   "pitch" : 0,
-  "yaw" : 1,
+  "yaw" : 0,
   "x" : 0,
   "y" : 0,
   "z" : 1,
   "rotation" : 0,
 
-  "Croll" : 1,
+  "Croll" : 0,
   "Cpitch" : 0, 
   "Cyaw" : 1,
   "Cx" : 1,
-  "Cy" : 0,
+  "Cy" : 1,
   "Cz" : 1,
-  "Cabsz" : 1,
+  "Cabsz" : 0,
 
   "kproll" : 0,
   "kdroll" : 0 ,
@@ -45,8 +45,8 @@ feedbackPD = { "roll" : 0,
   "kdx" : 0,
   "kpy" : 0,
   "kdy" : 0,
-  "kpz" : 2,#.5
-  "kdz" : 30,#-3
+  "kpz" : .2,#.5
+  "kdz" : 0,#-3
   "kiz" : 0,
 
   "integral_dt" : 0,#.0001,
@@ -61,7 +61,7 @@ weights = { "eulerGamma" : 0,
   "rollRateGamma" : 0.7,
   "yawRateGamma" : 0.975,
   "pitchRateGamma" : 0.7,
-  "zGamma" : 0.9,
+  "zGamma" : 0.5,
   "vzGamma" : 0.975
 }
 
@@ -270,37 +270,39 @@ if __name__ == "__main__":
             x_old = x
 
             if abs(joystick.get_axis(3)) > 0.1:
-                fx = -.8 * joystick.get_axis(3)  # left handler: up-down, inverted
+                fx = 1 * joystick.get_axis(3)  # left handler: up-down, inverted
             else:
                 fx = 0
-            if abs(joystick.get_axis(0)) > 0.1:
-                taux = -0.03 * joystick.get_axis(0)
+            if abs(joystick.get_axis(2)) > 0.1:
+                fy = 1 * joystick.get_axis(2)  # right handler: left-right
             else:
-                taux = 0
+                fy = 0
+            if abs(joystick.get_axis(0)) > 0.1:
+                tauz = 0.5 * joystick.get_axis(0)
+            else:
+                tauz = 0
             fz = 0  # -2*joystick.get_axis(1)  # right handler: up-down, inverted
 
-            if x_state:
-                if left == 1 and l_old == 0:
-                    print("left")
-                    snap += 1
-                    tauz += 3.1415 / 4
-                elif right == 1 and r_old == 0:
-                    print("right")
-                    snap += 1
-                    tauz += -3.1415 / 4
-            else:
-                snap = 0
-                if abs(joystick.get_axis(2)) > 0.1:
-                    tauz = -5 * joystick.get_axis(2)  # right handler: left-right
-                else:
-                    tauz = 0
+            # if x_state:
+            #     if left == 1 and l_old == 0:
+            #         print("left")
+            #         snap += 1
+            #         tauz += 3.1415 / 4
+            #     elif right == 1 and r_old == 0:
+            #         print("right")
+            #         snap += 1
+            #         tauz += -3.1415 / 4
+            # else:
+            #     snap = 0
+
             l_old = left
             r_old = right
-            fy = 0
+            
             tauy = 0
+            taux = 0
             # absz = .5
             if abs(joystick.get_axis(1)) > 0.15:
-                absz += -(time.time() - time_start) * joystick.get_axis(1)
+                absz += -(time.time() - time_start) * joystick.get_axis(1)*.3
             if b_state == 0:
                 absz = 1
                 x_state = 0

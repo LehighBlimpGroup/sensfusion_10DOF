@@ -14,6 +14,13 @@ typedef struct init_flags_s {
     int PORT, motor_type, mode, control;
 } init_flags_t;
 
+
+typedef struct sensor_weights_t {
+    float eulerGamma;
+    float rollRateGamma, yawRateGamma, pitchRateGamma;
+    float zGamma, vzGamma;
+} sensor_weights_t;
+
 typedef struct sensors_s {
     float roll, pitch, yaw;
     float rollrate, pitchrate, yawrate;

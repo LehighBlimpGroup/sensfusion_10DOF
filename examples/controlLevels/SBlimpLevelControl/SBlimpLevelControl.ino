@@ -1,11 +1,11 @@
 #include "modBlimp.h"
 #include "BNO55.h"
-#include "baro280.h"
+#include "baro390.h"
 
 
 ModBlimp blimp;
 BNO55 bno;
-baro280 baro;
+baro390 baro;
 
 
 IBusBM IBus; 
@@ -30,7 +30,7 @@ init_flags_t init_flags = {
   .PORT = 1345,
   .motor_type = 0,
   .mode = 2,
-  .control = 0,
+  .control = 2,
 };
 
 
@@ -160,6 +160,7 @@ bool snapon = 0;
 // float resyncPitch = 0.09;
 // float resyncPitchTemp = 0;
 // float resyncTimer = 0;
+unsigned long timed = millis();
 void loop() {
 
   
@@ -170,6 +171,7 @@ void loop() {
   //    contains: flag, ready, data[11]
   */
   blimp.getControllerRaws(&raws);
+
 
 
   /*
@@ -193,7 +195,7 @@ void loop() {
   }
 
   if ((int)(flag/10) == 0){// flag == 0, 1, 2uses control of what used to be the correct way
-    oldLogic(); //changes outputs using the old format
+    return; //changes outputs using the old format
   } else if ((int)(flag/10) == 1){ //flag == 10, 11, 12
     //set FLAGS for other stuff
     setPDflags(PDterms,&weights, &raws);
@@ -245,7 +247,7 @@ void loop() {
     }
     
     addFeedback(&controls, &sensors); //this function is implemented here for you to customize
-    blimp.getOutputs(&controls, &sensors, &outputs);
+    getOutputs(&controls, &sensors, &outputs);
 
   }
 
@@ -317,93 +319,61 @@ void setPDflags(feedback_t *PDterms, sensor_weights_t *weights, raw_t *raws){
 
 }
 
-void oldLogic() {
 
-  /*  
-  //    attempts to get the lastest information about the SENSORS and places them into the 
-  //    sensor_t data structure
-  //    contains: roll, pitch, yaw, rollrate, pitchrate, yawrate, estimatedZ, velocityZ, groundZ
-  //    will return 0 for all sensors if sensors == false
-  */
-  getLatestSensorData(&sensors);
-
-  sensors.pitch =  pitchSign * sensors.pitch  + pitchOffset;//hack to invert pitch due to orientation of the sensor
-  while (sensors.pitch > 3.1416) {
-    sensors.pitch -= 3.1416*2;
-  }
-  while (sensors.pitch < -3.1416) {
-    sensors.pitch += 3.1416*2;
-  }
+void testMotors() {
   
-
-  /*
-  //    attempts to get the lastest information about the CONTROLLER and places them into the 
-  //    controller_t data structure
-  //    contrains: fx, fy, fz, absz, tx, ty, tz, ready
-  */
-  blimp.getControllerData(&controls);
-
-  controlAlgorithm(&controls, &sensors);
-  
-
-
-
-
-  /*
-  //    adds feedback directly into the controller terms using sensor feedback
-  //    replace this with your own custom function for more customization
-  //        example is placed below
-  */
-  //blimp.addFeedback(&controls, &sensors);
-  addFeedback(&controls, &sensors); //this function is implemented here for you to customize
-
-
-  // Serial.print(controls.fz);
-  // Serial.print(", ");
-  // Serial.print(controls.tz);
-  // Serial.print(", ");
-  // Serial.println(sensors.yawrate*100);
-
-  // Serial.print(sensors.yaw);
-  // Serial.print(", ");
-  // Serial.print(sensors.roll);
-  // Serial.print(", ");
-  // Serial.println(sensors.estimatedZ);
-
-  /*
-  //    uses the mode to determine the control scheme for the motor/servo outputs
-  //    currently only implementation is for the bicopter blimp
-  //    replace this with your own custom function for more customization
-  //    actuation_t data type contains: m1, m2, s1, s2 for each motor and servo
-  //        example is placed below
-  */
-  blimp.getOutputs(&controls, &sensors, &outputs);
-  //getOutputs(&controls, &sensors, &outputs); //this function is implemented here for you to customize
-  
-  /*
-  //    uses the mode to determine the ouput scheme for the motor/servo outputs
-  //    currently only implementation is for the bicopter blimp
-  //    outputs should be floats between 0 and 1
-  */
-  // blimp.executeOutputs(&outputs);
-  // delay(4);
-}
-
-time_t snaptime;
-
-float aveyaw = 0;
-float tempyaw = 0;
-int oldsnap = 0;
-float ballz = 0;
-
-void controlAlgorithm(controller_t *controls, sensors_t *sensors) {
-  blimp.IBus.loop();
-  
-  //randomWalk(controls, sensors);
-  
-  //followBall(controls, sensors);
+  timed = millis();
+  while (millis() - timed < 1000) {
+    outputs.ready = true;
+    outputs.m1 = 0.5;
+    outputs.m2 = 0;
+    outputs.s1 = 0;
+    outputs.s2 = 0;
+    blimp.executeOutputs(&outputs);
     
+    delay (5);
+  }
+  timed = millis();
+  while (millis() - timed < 1000) {
+    outputs.m1 = 0;
+    outputs.m2 = 0.5;
+    outputs.s1 = 0;
+    outputs.s2 = 0;
+    blimp.executeOutputs(&outputs);
+    
+    delay (5);
+  }
+  timed = millis();
+  while (millis() - timed < 1000) {
+    outputs.m1 = 0;
+    outputs.m2 = 0;
+    outputs.s1 = 0.5;
+    outputs.s2 = 0;
+    blimp.executeOutputs(&outputs);
+    
+    delay (5);
+  }
+  timed = millis();
+  while (millis() - timed < 1000) {
+    outputs.m1 = 0;
+    outputs.m2 = 0;
+    outputs.s1 = 0;
+    outputs.s2 = 0.5;
+    blimp.executeOutputs(&outputs);
+    
+    delay (5);
+  }
+  timed = millis();
+  while (millis() - timed < 1000) {
+    outputs.ready = false;
+    blimp.executeOutputs(&outputs);
+    
+    delay (5);
+  }
+  return;
 }
+
+
 
 /*
   -----------------------------------------------------------------------------------------------------
@@ -423,7 +393,7 @@ float fzave = 0;
 float tzave = 0;
 // float tempyaw = 0;
 // float oldyaw = 0;
-// float aveyaw = 0;
+float aveyaw = 0;
 // float oldsnap = 0;
 
 //adds sensor feedback into the control values
@@ -484,61 +454,43 @@ void getOutputs(controller_t *controls, sensors_t *sensors, actuation_t *out ){
 
     //set output to default if controls not ready
     if (controls->ready == false){
-      out->s1 = .5f;
-      out->s2 = .5f;
-      out->m1 = 0;
-      out->m2 = 0;
+      out->m1 = 0; //D0
+      out->m2 = 0; //D1
+      out->s1 = 0; //D2
+      out->s2 = 0; //D3
       out->ready = false;
       return;
     }
 
     out->ready = true;
-    //inputs to the A-Matrix
-    float l = PDterms->lx; //.3
     
-    float fx = clamp(controls->fx, -1 , 1);//setpoint->bicopter.fx;
-    float fz = clamp(controls->fz, 0.1 , 2);//setpoint->bicopter.fz;
-    float maxRadsYaw = .25;//.175;
-    float magxz = sqrt(fz*fz + fx*fx)* tan(maxRadsYaw); //limits the yaw based on the magnitude of the force
-    float taux = clamp(controls->tx, -l + (float)0.01 , l - (float) 0.01);
-    float tauz = clamp(controls->tz, -1 , 1)*magxz;// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
+    
+    float fx = clamp(controls->fx, -1 , 1)*.5f;//setpoint->bicopter.fx;
+    float fy = clamp(controls->fy, -1 , 1)*.5f;//setpoint->bicopter.fx;
+    float fz = clamp(controls->fz, 0 , 1) * .35355f;//setpoint->bicopter.fz;
+    float tauz = clamp(controls->tz, -1 , 1)*.5f;// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
+
+    Serial.print(fx);
+    Serial.print(",");
+    Serial.print(fy);
+    Serial.print(",");
+    Serial.print(fz);
+    Serial.print(",");
+    Serial.println(sensors->estimatedZ - sensors->groundZ);
+    
+
+    float f0 = fx + fy + fz + tauz; //D0
+    float f1 = -fx + fy + fz - tauz; //D1
+    float f2 = -fx - fy + fz + tauz; //D2
+    float f3 = fx - fy + fz - tauz; //D3
 
 
-    //inverse A-Matrix calculations
-    float term1 = l*l*fx*fx + l*l*fz*fz + taux*taux + tauz*tauz;
-    float term2 = 2*fz*l*taux - 2*fx*l*tauz;
-    float term3 = sqrt(term1+term2);
-    float term4 = sqrt(term1-term2);
-    float f1 = term3/(2*l); // in unknown units
-    float f2 = term4/(2*l);
-    float t1 = atan2((fz*l - taux)/term3, (fx*l + tauz)/term3 ) - sensors->pitch;// in radians
-    float t2 = atan2((fz*l + taux)/term4, (fx*l - tauz)/term4 ) - sensors->pitch;
-
-    //checking for full rotations
-    while (t1 < -PI/2) {
-      t1 = t1 + 2 * PI;
-    }
-    while (t1 > 3*PI/2) {
-      t1 = t1 - 2 * PI;
-    }
-    while (t2 < -PI/2) {
-      t2 = t2 + 2 * PI;
-    }
-    while (t2 > 3*PI/2) {
-      t2 = t2 - 2 * PI;
-    }
 
     //converting values to a more stable form
-    out->s1 = clamp(t1, 0, PI)/(PI);// cant handle values between PI and 2PI
-    out->s2 = clamp(t2, 0, PI)/(PI);
-    out->m1 = clamp(f1, 0, 1);
-    out->m2 = clamp(f2, 0, 1);
-    if (out->m1 < 0.02f ){
-      out->s1 = 0.5f; 
-    }
-    if (out->m2 < 0.02f ){
-      out->s2 = 0.5f; 
-    }
+    out->m1 = clamp(f0, 0, 1); //
+    out->m2 = clamp(f1, 0, 1);
+    out->s1 = clamp(f2, 0, 1);// cant handle values between PI and 2PI
+    out->s2 = clamp(f3, 0, 1);
     return;
 }
 float clamp(float in, float min, float max){
