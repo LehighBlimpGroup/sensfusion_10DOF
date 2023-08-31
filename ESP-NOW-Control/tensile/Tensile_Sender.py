@@ -55,7 +55,10 @@ feedbackPD = { "roll" : 0,
 
   "lx" : .15,
   "pitchSign" : 1,
-  "pitchOffset" : -3.2816
+  "pitchOffset" : -3.2816,
+
+  "servo1offset" : 0,
+  "servo2offset" : .30
 }
 weights = { "eulerGamma" : 0,
   "rollRateGamma" : 0.7,
@@ -224,7 +227,9 @@ def sendAllFlags():
         feedbackPD["integral_dt"],  
         feedbackPD["z_int_low"], 
         feedbackPD["z_int_high"],  
-        0,0,0,0,0,0,0
+        feedbackPD["servo1offset"],  
+        feedbackPD["servo2offset"], 
+        0,0,0,0,0
     )
     esp_now_send(sock, esp_now_input)
     time.sleep(0.05)  # 0.005
@@ -233,7 +238,19 @@ if __name__ == "__main__":
     sock = espnow_init()
 
 
-    sendAllFlags()
+    #sendAllFlags()
+    esp_now_input = Control_Input(
+        15, 0,
+        feedbackPD["kiz"], 
+        feedbackPD["integral_dt"],  
+        feedbackPD["z_int_low"], 
+        feedbackPD["z_int_high"],  
+        feedbackPD["servo1offset"],  
+        feedbackPD["servo2offset"], 
+        0,0,0,0,0
+    )
+    esp_now_send(sock, esp_now_input)
+    time.sleep(0.05)  # 0.005
 
     joystick = init()
     l = 0.2  # meters
@@ -258,13 +275,14 @@ if __name__ == "__main__":
                 while pygame.joystick.get_count() == 0:
                     pass
                 joystick = init()
+                
             # Get the joystick readings
             pygame.event.pump()
             b = joystick.get_button(1)
             x = joystick.get_button(2)
             left = joystick.get_hat(0)[0] == -1
             right = joystick.get_hat(0)[0] == 1
-            
+            fy = 0
             if b == 1 and b_old == 0:
                 b_state = not b_state
             b_old = b
@@ -278,13 +296,13 @@ if __name__ == "__main__":
             else:
                 fx = 0
             if abs(joystick.get_axis(2)) > 0.1:
-                fy = 1 * joystick.get_axis(2)  # right handler: left-right
-            else:
-                fy = 0
-            if abs(joystick.get_axis(0)) > 0.1:
-                tauz = 0.5 * joystick.get_axis(0)
+                tauz = -.2 * joystick.get_axis(2)  # right handler: left-right
             else:
                 tauz = 0
+            # if abs(joystick.get_axis(0)) > 0.1:
+            #     tauz = 0.5 * joystick.get_axis(0)
+            # else:
+            #     tauz = 0
             fz = 0  # -2*joystick.get_axis(1)  # right handler: up-down, inverted
 
             # if x_state:
@@ -308,7 +326,7 @@ if __name__ == "__main__":
             if abs(joystick.get_axis(1)) > 0.15:
                 absz += -(time.time() - time_start) * joystick.get_axis(1)*.3
             if b_state == 0:
-                absz = 1
+                absz = .4
                 x_state = 0
 
             time_start = time.time()
