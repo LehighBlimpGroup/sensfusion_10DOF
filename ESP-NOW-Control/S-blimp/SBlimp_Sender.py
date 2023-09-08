@@ -16,11 +16,11 @@ import socket
 import struct
 import math
 
-PORT = 'COM5'
+PORT = 'COM20'
 
 feedbackPD = { "roll" : 0,
   "pitch" : 0,
-  "yaw" : 0,
+  "yaw" : 1,
   "x" : 0,
   "y" : 0,
   "z" : 1,
@@ -32,20 +32,20 @@ feedbackPD = { "roll" : 0,
   "Cx" : 1,
   "Cy" : 1,
   "Cz" : 1,
-  "Cabsz" : 0,
+  "Cabsz" : 1,
 
   "kproll" : 0,
   "kdroll" : 0 ,
   "kppitch" : 0,
   "kdpitch" : 0,
-  "kpyaw" : 3.0,
-  "kdyaw" : -120,
+  "kpyaw" : 0,
+  "kdyaw" : .75,
 
   "kpx" : 0,
   "kdx" : 0,
   "kpy" : 0,
   "kdy" : 0,
-  "kpz" : .2,#.5
+  "kpz" : .08,#.5
   "kdz" : 0,#-3
   "kiz" : 0,
 
@@ -256,6 +256,7 @@ if __name__ == "__main__":
         while True:
             if pygame.joystick.get_count() == 0:
                 while pygame.joystick.get_count() == 0:
+                    print("JOY FAIL")
                     pass
                 joystick = init()
             # Get the joystick readings
@@ -274,11 +275,11 @@ if __name__ == "__main__":
             x_old = x
 
             if abs(joystick.get_axis(3)) > 0.1:
-                fx = 1 * joystick.get_axis(3)  # left handler: up-down, inverted
+                fx = -1 * joystick.get_axis(3)  # left handler: up-down, inverted
             else:
                 fx = 0
             if abs(joystick.get_axis(2)) > 0.1:
-                fy = 1 * joystick.get_axis(2)  # right handler: left-right
+                fy = -1 * joystick.get_axis(2)  # right handler: left-right
             else:
                 fy = 0
             if abs(joystick.get_axis(0)) > 0.1:
@@ -306,7 +307,7 @@ if __name__ == "__main__":
             taux = 0
             # absz = .5
             if abs(joystick.get_axis(1)) > 0.15:
-                absz += -(time.time() - time_start) * joystick.get_axis(1)*.3
+                absz += -(time.time() - time_start) * joystick.get_axis(1)*1
             if b_state == 0:
                 absz = 1
                 x_state = 0
@@ -323,10 +324,10 @@ if __name__ == "__main__":
             #     x_state,
             #     snap
             # )
-
+            fz = .6
 
             esp_now_input = Control_Input(
-                21,int(b_state), fx, fy, absz, taux, tauy, tauz, fz, 0, 0, 0, 0
+                21,int(b_state), fx, fy, absz, taux, tauy, tauz-.06, fz, 0, 0, 0, 0
             )
             esp_now_send(sock, esp_now_input)
                 

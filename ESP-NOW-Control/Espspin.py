@@ -1,8 +1,8 @@
 '''
-Author       : Edward Jeffs, Hanquing Qi
+Author       : Hanqing Qi
 Date         : 2023-07-20 13:34:09
-LastEditors  : Edward Jeffs
-LastEditTime : 2023-08-31 15:03:55
+LastEditors  : Hanqing Qi
+LastEditTime : 2023-08-01 17:18:55
 FilePath     : /undefined/Users/hanqingqi/Desktop/sensfusion_10DOF/ESP-NOW-Control/Serial_Sender.py
 Description  : Sender to send data to ESP32 through hardware serial port
 '''
@@ -16,23 +16,23 @@ import socket
 import struct
 import math
 
-PORT = 'COM5'
+PORT = 'COM15'
 
 feedbackPD = { "roll" : 0,
   "pitch" : 0,
-  "yaw" : 0,
+  "yaw" : 1,
   "x" : 0,
   "y" : 0,
-  "z" : 0,
+  "z" : 1,
   "rotation" : 0,
 
-  "Croll" : 0,
+  "Croll" : 1,
   "Cpitch" : 0, 
   "Cyaw" : 1,
   "Cx" : 1,
-  "Cy" : 1,
+  "Cy" : 0,
   "Cz" : 1,
-  "Cabsz" : 0,
+  "Cabsz" : 1,
 
   "kproll" : 0,
   "kdroll" : 0 ,
@@ -45,8 +45,8 @@ feedbackPD = { "roll" : 0,
   "kdx" : 0,
   "kpy" : 0,
   "kdy" : 0,
-  "kpz" : .2,#.5
-  "kdz" : 0,#-3
+  "kpz" : 2,#.5
+  "kdz" : 30,#-3
   "kiz" : 0,
 
   "integral_dt" : 0,#.0001,
@@ -55,16 +55,13 @@ feedbackPD = { "roll" : 0,
 
   "lx" : .15,
   "pitchSign" : 1,
-  "pitchOffset" : -3.2816,
-
-  "servo1offset" : 0,
-  "servo2offset" : .30
+  "pitchOffset" : -3.2816
 }
 weights = { "eulerGamma" : 0,
   "rollRateGamma" : 0.7,
   "yawRateGamma" : 0.975,
   "pitchRateGamma" : 0.7,
-  "zGamma" : 0.5,
+  "zGamma" : 0.9,
   "vzGamma" : 0.975
 }
 
@@ -227,9 +224,7 @@ def sendAllFlags():
         feedbackPD["integral_dt"],  
         feedbackPD["z_int_low"], 
         feedbackPD["z_int_high"],  
-        feedbackPD["servo1offset"],  
-        feedbackPD["servo2offset"], 
-        0,0,0,0,0
+        0,0,0,0,0,0,0
     )
     esp_now_send(sock, esp_now_input)
     time.sleep(0.05)  # 0.005
@@ -239,20 +234,8 @@ if __name__ == "__main__":
 
 
     #sendAllFlags()
-    esp_now_input = Control_Input(
-        15, 0,
-        feedbackPD["kiz"], 
-        feedbackPD["integral_dt"],  
-        feedbackPD["z_int_low"], 
-        feedbackPD["z_int_high"],  
-        feedbackPD["servo1offset"],  
-        feedbackPD["servo2offset"], 
-        0,0,0,0,0
-    )
-    esp_now_send(sock, esp_now_input)
-    time.sleep(0.05)  # 0.005
 
-    joystick = init()
+    #joystick = init()
     l = 0.2  # meters
     absz = 0
     b_old = 0
@@ -271,39 +254,30 @@ if __name__ == "__main__":
     time_start = time.time()
     try:
         while True:
-            if pygame.joystick.get_count() == 0:
-                while pygame.joystick.get_count() == 0:
-                    pass
-                joystick = init()
-                
             # Get the joystick readings
-            pygame.event.pump()
-            b = joystick.get_button(1)
-            x = joystick.get_button(2)
-            left = joystick.get_hat(0)[0] == -1
-            right = joystick.get_hat(0)[0] == 1
-            fy = 0
-            if b == 1 and b_old == 0:
-                b_state = not b_state
-            b_old = b
+            # pygame.event.pump()
+            # b = joystick.get_button(1)
+            # x = joystick.get_button(2)
+            # left = joystick.get_hat(0)[0] == -1
+            # right = joystick.get_hat(0)[0] == 1
+            
+            # if b == 1 and b_old == 0:
+            #     b_state = not b_state
+            # b_old = b
 
-            if x == 1 and x_old == 0:
-                x_state = not x_state
-            x_old = x
+            # if x == 1 and x_old == 0:
+            #     x_state = not x_state
+            # x_old = x
 
-            if abs(joystick.get_axis(3)) > 0.1:
-                fx = 1 * joystick.get_axis(3)  # left handler: up-down, inverted
-            else:
-                fx = 0
-            if abs(joystick.get_axis(2)) > 0.1:
-                tauz = -.2 * joystick.get_axis(2)  # right handler: left-right
-            else:
-                tauz = 0
-            # if abs(joystick.get_axis(0)) > 0.1:
-            #     tauz = 0.5 * joystick.get_axis(0)
+            # if abs(joystick.get_axis(3)) > 0.1:
+            #     fx = -.8 * joystick.get_axis(3)  # left handler: up-down, inverted
             # else:
-            #     tauz = 0
-            fz = 0  # -2*joystick.get_axis(1)  # right handler: up-down, inverted
+            #     fx = 0
+            # if abs(joystick.get_axis(0)) > 0.1:
+            #     taux = -0.03 * joystick.get_axis(0)
+            # else:
+            #     taux = 0
+            # fz = 0  # -2*joystick.get_axis(1)  # right handler: up-down, inverted
 
             # if x_state:
             #     if left == 1 and l_old == 0:
@@ -316,18 +290,20 @@ if __name__ == "__main__":
             #         tauz += -3.1415 / 4
             # else:
             #     snap = 0
-
-            l_old = left
-            r_old = right
-            
-            tauy = 0
-            taux = 0
-            # absz = .5
-            if abs(joystick.get_axis(1)) > 0.15:
-                absz += -(time.time() - time_start) * joystick.get_axis(1)*.3
-            if b_state == 0:
-                absz = .4
-                x_state = 0
+            #     if abs(joystick.get_axis(2)) > 0.1:
+            #         tauz = -5 * joystick.get_axis(2)  # right handler: left-right
+            #     else:
+            #         tauz = 0
+            # l_old = left
+            # r_old = right
+            # fy = 0
+            # tauy = 0
+            # # absz = .5
+            # if abs(joystick.get_axis(1)) > 0.15:
+            #     absz += -(time.time() - time_start) * joystick.get_axis(1)
+            # if b_state == 0:
+            #     absz = 1
+            #     x_state = 0
 
             time_start = time.time()
 
@@ -344,7 +320,7 @@ if __name__ == "__main__":
 
 
             esp_now_input = Control_Input(
-                21,int(b_state), fx, fy, absz, taux, tauy, tauz, fz, 0, 0, 0, 0
+                0,0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0
             )
             esp_now_send(sock, esp_now_input)
                 

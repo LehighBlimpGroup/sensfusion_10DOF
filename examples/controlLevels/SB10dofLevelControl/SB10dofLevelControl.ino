@@ -1,11 +1,12 @@
 #include "modBlimp.h"
-#include "BNO55.h"
-#include "baro390.h"
-
+//#include "BNO55.h"
+#include "baro280.h"
+#include <MPU9250_asukiaaa.h>
+MPU9250_asukiaaa mySensor;
 
 ModBlimp blimp;
-BNO55 bno;
-baro390 baro;
+//BNO55 bno;
+baro280 baro;
 
 
 IBusBM IBus; 
@@ -139,6 +140,9 @@ controller_t controls;
 raw_t raws;
 actuation_t outputs;
 
+float realz = 0;
+float realvz = 0;
+
 
 void setup() {
   
@@ -148,7 +152,8 @@ void setup() {
     
   delay(100);
   baro.init();
-  bno.init();
+  mySensor.beginGyro();
+  //bno.init();
 
   getLatestSensorData(&sensors);
   sensors.groundZ = baro.getEstimatedZ();
@@ -186,18 +191,24 @@ void loop() {
   int flag = raws.flag;
   
   getLatestSensorData(&sensors);
-  sensors.pitch =  sensors.pitch -3.1416 - 0.14;//hack to invert pitch due to orientation of the sensor
-  while (sensors.pitch > 3.1416) {
-    sensors.pitch -= 3.1416*2;
-  }
-  while (sensors.pitch < -3.1416) {
-    sensors.pitch += 3.1416*2;
-  }
+  // Serial.print(realvz*1000);
+  // Serial.print(", ");
+  // Serial.print(realz - sensors.groundZ);
+  // Serial.print(", ");
+  // Serial.println(sensors.yawrate);
+  // sensors.pitch =  sensors.pitch -3.1416 - 0.14;//hack to invert pitch due to orientation of the sensor
+  // while (sensors.pitch > 3.1416) {
+  //   sensors.pitch -= 3.1416*2;
+  // }
+  // while (sensors.pitch < -3.1416) {
+  //   sensors.pitch += 3.1416*2;
+  // }
 
   if ((int)(flag/10) == 0){// flag == 0, 1, 2uses control of what used to be the correct way
     return; //changes outputs using the old format
   } else if ((int)(flag/10) == 1){ //flag == 10, 11, 12
     //set FLAGS for other stuff
+    sensors.groundZ = sensors.estimatedZ;
     setPDflags(PDterms,&weights, &raws);
     outputs.m1 = 0;
     outputs.m2 = 0;
@@ -205,6 +216,7 @@ void loop() {
     outputs.s2 = 0;
     outputs.ready = false;
     z_integral = 0;
+    realz = sensors.estimatedZ;
     
   } else if (flag == 20 or flag == 22){ // low level control
     if (flag == 20){
@@ -384,9 +396,14 @@ void testMotors() {
 */
 
 void getLatestSensorData(sensors_t *sensors) {
-  bno.updateSensors(sensors, &weights);
+  //bno.updateSensors(sensors, &weights);
+  mySensor.gyroUpdate();
+  sensors->yawrate = sensors->yawrate * weights.yawRateGamma + mySensor.gyroZ()*3.1415f/180.0f * (1 - weights.yawRateGamma);
   sensors->estimatedZ = sensors->estimatedZ * weights.zGamma  + baro.getEstimatedZ()* (1 - weights.zGamma);
-  sensors->velocityZ = sensors->velocityZ * weights.vzGamma + baro.getVelocityZ()*(1 - weights.zGamma);
+  realz += (sensors->estimatedZ - realz)*.01;
+  sensors->velocityZ = sensors->velocityZ * weights.vzGamma + baro.getVelocityZ()*(1 - weights.vzGamma);
+  realvz  += (sensors->velocityZ - realvz) * .003;
+  realvz *= .99;
 }
 
 float fzave = 0;
@@ -411,12 +428,12 @@ void addFeedback(controller_t *controls, sensors_t *sensors) {
     //z feedback 
     if (PDterms->z) {
       if (controls->ready){
-        z_integral += (controls->fz  - (sensors->estimatedZ-sensors->groundZ)) * integral_dt;
+        z_integral += (controls->fz  - (realz-sensors->groundZ)) * integral_dt;
         z_integral = clamp(z_integral, z_int_low,z_int_high);
         //Serial.println(z_integral);
       } 
-      controls->fz = (controls->fz  - (sensors->estimatedZ-sensors->groundZ))*PDterms->kpz 
-                      - (sensors->velocityZ)*PDterms->kdz + (z_integral) * kiz + controls->absz;
+      controls->fz = (controls->fz  - (realz-sensors->groundZ))*PDterms->kpz 
+                      - (realvz)*PDterms->kdz + (z_integral) * kiz + controls->absz;
       
       // fzave = fzave * .9 + controls->fz * .1;
       // controls->fz = fzave;
@@ -469,14 +486,19 @@ void getOutputs(controller_t *controls, sensors_t *sensors, actuation_t *out ){
     float fy = clamp(controls->fy, -1 , 1)*.5f;//setpoint->bicopter.fx;
     float fz = clamp(controls->fz, 0 , 2) * .35355f;//setpoint->bicopter.fz;
     float tauz = clamp(controls->tz, -1 , 1)*.5f;// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
-
-    Serial.print(fx);
-    Serial.print(",");
-    Serial.print(fy);
-    Serial.print(",");
-    Serial.print(fz);
-    Serial.print(",");
-    Serial.println(sensors->estimatedZ - sensors->groundZ);
+    float mag = sqrt(fx*fx + fy*fy + tauz*tauz);
+    if (mag > fz){
+      fx = fx * fz/mag;
+      fy = fy * fz/mag;
+      tauz = tauz * fz/mag;
+    }
+    // Serial.print(fx);
+    // Serial.print(",");
+    // Serial.print(fy);
+    // Serial.print(",");
+    // Serial.print(fz);
+    // Serial.print(",");
+    // Serial.println(sensors->estimatedZ - sensors->groundZ);
     
 
     float f0 = fx + fy + fz + tauz; //D0

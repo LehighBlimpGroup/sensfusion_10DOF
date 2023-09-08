@@ -23,12 +23,12 @@ flags to be used in the init
 init_flags_t init_flags = {
   .verbose = false,
   .sensors = false,
-  .escarm = true,
+  .escarm = false,
   .UDP = false,
-  .Ibus = true,
+  .Ibus = false,
   .ESPNOW = true,
   .PORT = 1345,
-  .motor_type = 0,
+  .motor_type = 1,
   .mode = 2,
   .control = 2,
 };
@@ -90,15 +90,15 @@ PD terms for use in the feedback controller
 feedback_t feedbackPD = {
   .roll = false,
   .pitch = false, 
-  .yaw = true,
+  .yaw = false,
   .x = false,
   .y = false,
-  .z = true,
+  .z = false,
   .rotation = false,
 
   .Croll = 0,
   .Cpitch = 0, 
-  .Cyaw = 1,
+  .Cyaw = 0,
   .Cx = 1,
   .Cy = 1,
   .Cz = 1,
@@ -147,9 +147,9 @@ void setup() {
   blimp.init(&init_flags, &init_sensors, &feedbackPD);
     
   delay(100);
-  baro.init();
-  bno.init();
-
+  // baro.init();
+  // bno.init();
+  //testMotors();
   getLatestSensorData(&sensors);
   sensors.groundZ = baro.getEstimatedZ();
 
@@ -186,13 +186,13 @@ void loop() {
   int flag = raws.flag;
   
   getLatestSensorData(&sensors);
-  sensors.pitch =  sensors.pitch -3.1416 - 0.14;//hack to invert pitch due to orientation of the sensor
-  while (sensors.pitch > 3.1416) {
-    sensors.pitch -= 3.1416*2;
-  }
-  while (sensors.pitch < -3.1416) {
-    sensors.pitch += 3.1416*2;
-  }
+  // sensors.pitch =  sensors.pitch -3.1416 - 0.14;//hack to invert pitch due to orientation of the sensor
+  // while (sensors.pitch > 3.1416) {
+  //   sensors.pitch -= 3.1416*2;
+  // }
+  // while (sensors.pitch < -3.1416) {
+  //   sensors.pitch += 3.1416*2;
+  // }
 
   if ((int)(flag/10) == 0){// flag == 0, 1, 2uses control of what used to be the correct way
     return; //changes outputs using the old format
@@ -325,7 +325,7 @@ void testMotors() {
   timed = millis();
   while (millis() - timed < 1000) {
     outputs.ready = true;
-    outputs.m1 = 0.5;
+    outputs.m1 = 0.1;
     outputs.m2 = 0;
     outputs.s1 = 0;
     outputs.s2 = 0;
@@ -336,7 +336,7 @@ void testMotors() {
   timed = millis();
   while (millis() - timed < 1000) {
     outputs.m1 = 0;
-    outputs.m2 = 0.5;
+    outputs.m2 = 0.1;
     outputs.s1 = 0;
     outputs.s2 = 0;
     blimp.executeOutputs(&outputs);
@@ -347,7 +347,7 @@ void testMotors() {
   while (millis() - timed < 1000) {
     outputs.m1 = 0;
     outputs.m2 = 0;
-    outputs.s1 = 0.5;
+    outputs.s1 = 0.1;
     outputs.s2 = 0;
     blimp.executeOutputs(&outputs);
     
@@ -358,7 +358,7 @@ void testMotors() {
     outputs.m1 = 0;
     outputs.m2 = 0;
     outputs.s1 = 0;
-    outputs.s2 = 0.5;
+    outputs.s2 = 0.1;
     blimp.executeOutputs(&outputs);
     
     delay (5);
@@ -411,12 +411,12 @@ void addFeedback(controller_t *controls, sensors_t *sensors) {
     //z feedback 
     if (PDterms->z) {
       if (controls->ready){
-        z_integral += (controls->fz  - (sensors->estimatedZ-sensors->groundZ)) * integral_dt;
+        z_integral += (controls->fz + controls->absz - (sensors->estimatedZ-sensors->groundZ)) * integral_dt;
         z_integral = clamp(z_integral, z_int_low,z_int_high);
         //Serial.println(z_integral);
       } 
-      controls->fz = (controls->fz  - (sensors->estimatedZ-sensors->groundZ))*PDterms->kpz 
-                      - (sensors->velocityZ)*PDterms->kdz + (z_integral) * kiz + controls->absz;
+      controls->fz = (controls->fz + controls->absz - (sensors->estimatedZ-sensors->groundZ))*PDterms->kpz 
+                      - (sensors->velocityZ)*PDterms->kdz + (z_integral) * kiz;
       
       // fzave = fzave * .9 + controls->fz * .1;
       // controls->fz = fzave;
@@ -467,8 +467,8 @@ void getOutputs(controller_t *controls, sensors_t *sensors, actuation_t *out ){
     
     float fx = clamp(controls->fx, -1 , 1)*.5f;//setpoint->bicopter.fx;
     float fy = clamp(controls->fy, -1 , 1)*.5f;//setpoint->bicopter.fx;
-    float fz = clamp(controls->fz, 0 , 2) * .35355f;//setpoint->bicopter.fz;
-    float tauz = clamp(controls->tz, -1 , 1)*.5f;// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
+    float fz = clamp(controls->fz, 0 , 3) * .35355f;//setpoint->bicopter.fz;
+    float tauz = clamp(controls->tz, -1 , 1)*.5f;// 
 
     Serial.print(fx);
     Serial.print(",");
