@@ -482,15 +482,14 @@ void getOutputs(controller_t *controls, sensors_t *sensors, actuation_t *out ){
     out->ready = true;
     
     
-    float fx = clamp(controls->fx, -1 , 1)*.5f;//setpoint->bicopter.fx;
-    float fy = clamp(controls->fy, -1 , 1)*.5f;//setpoint->bicopter.fx;
-    float fz = clamp(controls->fz, 0 , 2) * .35355f;//setpoint->bicopter.fz;
-    float tauz = clamp(controls->tz, -1 , 1)*.5f;// limit should be .25 setpoint->bicopter.tauz; //- stateAttitudeRateYaw
-    float mag = sqrt(fx*fx + fy*fy + tauz*tauz);
-    if (mag > fz){
-      fx = fx * fz/mag;
-      fy = fy * fz/mag;
-      tauz = tauz * fz/mag;
+    float fx = clamp(controls->fx, -1 , 1)*.5f;//
+    float fy = clamp(controls->fy, -1 , 1)*.5f;//
+    float fz = clamp(controls->fz, 0 , 2) * .35355f;//
+    float tauz = clamp(controls->tz, -1 , 1)*.5f;// 
+    float mag = sqrt(fx*fx + fy*fy);
+    if (mag > (fz - abs(tauz))){
+      fx = fx * (fz - abs(tauz))/mag;
+      fy = fy * (fz - abs(tauz))/mag;;
     }
     // Serial.print(fx);
     // Serial.print(",");

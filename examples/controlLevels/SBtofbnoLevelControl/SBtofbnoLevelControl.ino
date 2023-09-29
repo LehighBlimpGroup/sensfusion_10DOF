@@ -1,12 +1,18 @@
 #include "modBlimp.h"
 #include "BNO55.h"
-#include "baro390.h"
-
+#include "Adafruit_VL53L1X.h"
+//#include "baro280.h"
+//#include <MPU9250_asukiaaa.h>
+//MPU9250_asukiaaa mySensor;
 
 ModBlimp blimp;
 BNO55 bno;
-baro390 baro;
+//baro280 baro;
 
+
+
+
+Adafruit_VL53L1X vl53 = Adafruit_VL53L1X();
 
 IBusBM IBus; 
 
@@ -23,12 +29,12 @@ flags to be used in the init
 init_flags_t init_flags = {
   .verbose = false,
   .sensors = false,
-  .escarm = false,
+  .escarm = true,
   .UDP = false,
-  .Ibus = false,
+  .Ibus = true,
   .ESPNOW = true,
   .PORT = 1345,
-  .motor_type = 1,
+  .motor_type = 0,
   .mode = 2,
   .control = 2,
 };
@@ -70,7 +76,7 @@ sensor_weights_t weights = {
   .yawRateGamma = 0.7f,
   .pitchRateGamma = 0.7f,
   .zGamma = 0.9f,
-  .vzGamma = 0.9f,
+  .vzGamma = 0.7f,
 };
 
 
@@ -90,10 +96,10 @@ PD terms for use in the feedback controller
 feedback_t feedbackPD = {
   .roll = false,
   .pitch = false, 
-  .yaw = false,
+  .yaw = true,
   .x = false,
   .y = false,
-  .z = false,
+  .z = true,
   .rotation = false,
 
   .Croll = 0,
@@ -139,6 +145,9 @@ controller_t controls;
 raw_t raws;
 actuation_t outputs;
 
+float realz = 0;
+float realvz = 0;
+
 
 void setup() {
   
@@ -147,11 +156,37 @@ void setup() {
   blimp.init(&init_flags, &init_sensors, &feedbackPD);
     
   delay(100);
-  // baro.init();
-  // bno.init();
-  //testMotors();
+  bno.init();
+
+  //baro.init();
+  //mySensor.beginGyro();
+  Wire.begin();
+  if (! vl53.begin(0x29, &Wire)) {
+    Serial.print(F("Error on init of VL sensor: "));
+    Serial.println(vl53.vl_status);
+    while (1)       delay(10);
+  }
+  Serial.println(F("VL53L1X sensor OK!"));
+
+  Serial.print(F("Sensor ID: 0x"));
+  Serial.println(vl53.sensorID(), HEX);
+
+  if (! vl53.startRanging()) {
+    Serial.print(F("Couldn't start ranging: "));
+    Serial.println(vl53.vl_status);
+    while (1)       delay(10);
+  }
+  Serial.println(F("Ranging started"));
+
+  // Valid timing budgets: 15, 20, 33, 50, 100, 200 and 500ms!
+  vl53.setTimingBudget(50);
+  Serial.print(F("Timing budget (ms): "));
+  Serial.println(vl53.getTimingBudget());
+
+
+
   getLatestSensorData(&sensors);
-  sensors.groundZ = baro.getEstimatedZ();
+  sensors.groundZ = 0;
 
 
 }
@@ -186,6 +221,17 @@ void loop() {
   int flag = raws.flag;
   
   getLatestSensorData(&sensors);
+  Serial.print(sensors.velocityZ*100);
+  Serial.print(", ");
+  Serial.print(sensors.estimatedZ);
+  Serial.print(", ");
+  Serial.print(sensors.roll);
+  Serial.print(", ");
+  Serial.print(sensors.pitch);
+  Serial.print(", ");
+  Serial.print(sensors.yaw);
+  Serial.print(", ");
+  Serial.println(sensors.yawrate);
   // sensors.pitch =  sensors.pitch -3.1416 - 0.14;//hack to invert pitch due to orientation of the sensor
   // while (sensors.pitch > 3.1416) {
   //   sensors.pitch -= 3.1416*2;
@@ -198,6 +244,7 @@ void loop() {
     return; //changes outputs using the old format
   } else if ((int)(flag/10) == 1){ //flag == 10, 11, 12
     //set FLAGS for other stuff
+    sensors.groundZ = 0;
     setPDflags(PDterms,&weights, &raws);
     outputs.m1 = 0;
     outputs.m2 = 0;
@@ -205,6 +252,7 @@ void loop() {
     outputs.s2 = 0;
     outputs.ready = false;
     z_integral = 0;
+    realz = 0;
     
   } else if (flag == 20 or flag == 22){ // low level control
     if (flag == 20){
@@ -246,11 +294,8 @@ void loop() {
       controls.absz = (float)IBus.readChannel(6)/1000.0f;
     }
     
-    
-    
     addFeedback(&controls, &sensors); //this function is implemented here for you to customize
     getOutputs(&controls, &sensors, &outputs);
-    
 
   }
 
@@ -328,7 +373,7 @@ void testMotors() {
   timed = millis();
   while (millis() - timed < 1000) {
     outputs.ready = true;
-    outputs.m1 = 0.1;
+    outputs.m1 = 0.5;
     outputs.m2 = 0;
     outputs.s1 = 0;
     outputs.s2 = 0;
@@ -339,7 +384,7 @@ void testMotors() {
   timed = millis();
   while (millis() - timed < 1000) {
     outputs.m1 = 0;
-    outputs.m2 = 0.1;
+    outputs.m2 = 0.5;
     outputs.s1 = 0;
     outputs.s2 = 0;
     blimp.executeOutputs(&outputs);
@@ -350,7 +395,7 @@ void testMotors() {
   while (millis() - timed < 1000) {
     outputs.m1 = 0;
     outputs.m2 = 0;
-    outputs.s1 = 0.1;
+    outputs.s1 = 0.5;
     outputs.s2 = 0;
     blimp.executeOutputs(&outputs);
     
@@ -361,7 +406,7 @@ void testMotors() {
     outputs.m1 = 0;
     outputs.m2 = 0;
     outputs.s1 = 0;
-    outputs.s2 = 0.1;
+    outputs.s2 = 0.5;
     blimp.executeOutputs(&outputs);
     
     delay (5);
@@ -385,11 +430,43 @@ void testMotors() {
       or just implement it in this program
   -----------------------------------------------------------------------------------------------------
 */
-
+float delta = .05;
+unsigned long timed_sense = millis();
 void getLatestSensorData(sensors_t *sensors) {
   bno.updateSensors(sensors, &weights);
-  sensors->estimatedZ = sensors->estimatedZ * weights.zGamma  + baro.getEstimatedZ()* (1 - weights.zGamma);
-  sensors->velocityZ = sensors->velocityZ * weights.vzGamma + baro.getVelocityZ()*(1 - weights.zGamma);
+  int16_t distance;
+
+  if (vl53.dataReady()) {
+    // new measurement for the taking!
+    distance = vl53.distance();
+    if (distance == -1) {
+      sensors->velocityZ = sensors->velocityZ * weights.vzGamma + sensors->velocityZ/2 * (1 - weights.vzGamma);
+      sensors->estimatedZ = sensors->estimatedZ;
+      // something went wrong!
+      // Serial.print(F("Couldn't get distance: "));
+      // Serial.println(vl53.vl_status);
+      
+    } else {
+      
+      delta = (float)(millis() - timed_sense);
+      timed_sense = millis();
+      float newdist = ((float)distance)/1000.0f * cos(sensors->roll) * cos(sensors->pitch + 3.14159);
+      
+      sensors->velocityZ = sensors->velocityZ * weights.vzGamma + (newdist - sensors->estimatedZ)* delta * (1-weights.vzGamma);
+      sensors->estimatedZ = newdist;
+      
+
+      // data is read out, time for another reading!
+      vl53.clearInterrupt();
+    }
+  }
+  //mySensor.gyroUpdate();
+  // sensors->yawrate = sensors->yawrate * weights.yawRateGamma + mySensor.gyroZ()*3.1415f/180.0f * (1 - weights.yawRateGamma);
+  // sensors->estimatedZ = sensors->estimatedZ * weights.zGamma  + baro.getEstimatedZ()* (1 - weights.zGamma);
+  // realz += (sensors->estimatedZ - realz)*.01;
+  // sensors->velocityZ = sensors->velocityZ * weights.vzGamma + baro.getVelocityZ()*(1 - weights.vzGamma);
+  // realvz  += (sensors->velocityZ - realvz) * .003;
+  // realvz *= .99;
 }
 
 float fzave = 0;
@@ -398,6 +475,7 @@ float tzave = 0;
 // float oldyaw = 0;
 float aveyaw = 0;
 // float oldsnap = 0;
+float dyaw = 0;
 
 //adds sensor feedback into the control values
 //this set is specifically made for bicopter
@@ -414,12 +492,12 @@ void addFeedback(controller_t *controls, sensors_t *sensors) {
     //z feedback 
     if (PDterms->z) {
       if (controls->ready){
-        z_integral += (controls->fz + controls->absz - (sensors->estimatedZ-sensors->groundZ)) * integral_dt;
+        z_integral += (controls->fz  - (sensors->estimatedZ)) * integral_dt;
         z_integral = clamp(z_integral, z_int_low,z_int_high);
         //Serial.println(z_integral);
       } 
-      controls->fz = (controls->fz + controls->absz - (sensors->estimatedZ-sensors->groundZ))*PDterms->kpz 
-                      - (sensors->velocityZ)*PDterms->kdz + (z_integral) * kiz;
+      controls->fz = (controls->fz  - (sensors->estimatedZ))*PDterms->kpz 
+                      - (sensors->velocityZ)*PDterms->kdz + (z_integral) * kiz + controls->absz;
       
       // fzave = fzave * .9 + controls->fz * .1;
       // controls->fz = fzave;
@@ -427,8 +505,16 @@ void addFeedback(controller_t *controls, sensors_t *sensors) {
     
     //yaw feedback
     if (PDterms->yaw) { 
+      //dyaw = (aveyaw - (controls->tz - sensors->yaw)) * delta
+      aveyaw = (controls->tz - sensors->yaw);
+      while (aveyaw > 3.14159){
+        aveyaw -= 2*3.14159;
+      }
+      while (aveyaw < -3.14159){
+        aveyaw += 2*3.14159;
+      }
       
-      controls->tz = controls->tz + aveyaw * PDterms->kpyaw - sensors->yawrate*PDterms->kdyaw;
+      controls->tz =  aveyaw * PDterms->kpyaw - sensors->yawrate*PDterms->kdyaw;
       
     }
     
@@ -468,20 +554,27 @@ void getOutputs(controller_t *controls, sensors_t *sensors, actuation_t *out ){
     out->ready = true;
     
     
-    float fx = clamp(controls->fx, -1 , 1)*.5f;//setpoint->bicopter.fx;
-    float fy = clamp(controls->fy, -1 , 1)*.5f;//setpoint->bicopter.fx;
-    float fz = clamp(controls->fz, 0 , 3) * .35355f;//setpoint->bicopter.fz;
+    float fx = clamp(controls->fx, -1 , 1)*.5f;//
+    float fy = clamp(controls->fy, -1 , 1)*.5f;//
+    float fz = clamp(controls->fz, 0 , 2) * .35355f;//
     float tauz = clamp(controls->tz, -1 , 1)*.5f;// 
-
-    Serial.print(fx);
-    Serial.print(",");
-    Serial.print(fy);
-    Serial.print(",");
-    Serial.print(fz);
-    Serial.print(",");
-    Serial.print(tauz);
-    Serial.print(",");
-    Serial.println(sensors->estimatedZ - sensors->groundZ);
+    if (abs(tauz) > fz * .7){
+      tauz = tauz/abs(tauz) * fz*.7;
+    }
+    float mag = sqrt(fx*fx + fy*fy);
+    if (mag > (fz - abs(tauz))){
+      fx = fx * (fz - abs(tauz))/mag;
+      fy = fy * (fz - abs(tauz))/mag;;
+    }
+    fx = fx * cos(sensors->roll) ;
+    fy = fy * cos(sensors->pitch + 3.14159);
+    // Serial.print(fx);
+    // Serial.print(",");
+    // Serial.print(fy);
+    // Serial.print(",");
+    // Serial.print(fz);
+    // Serial.print(",");
+    // Serial.println(sensors->estimatedZ - sensors->groundZ);
     
 
     float f0 = fx + fy + fz + tauz; //D0
