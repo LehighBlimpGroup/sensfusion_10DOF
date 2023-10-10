@@ -16,7 +16,7 @@ import socket
 import struct
 import math
 
-PORT = 'COM5'
+PORT = 'COM6'
 
 feedbackPD = { "roll" : 0,
   "pitch" : 0,

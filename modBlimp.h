@@ -9,10 +9,12 @@
 #include <ESPNOW.h>
 
 
-#define SERVO1 D2
-#define SERVO2 D3
+#define SERVO1 D9
+#define SERVO2 D10
 #define THRUST1 D0
 #define THRUST2 D1
+#define SERVO3 D2
+#define SERVO4 D3
 
 
 class ModBlimp;
@@ -56,6 +58,7 @@ class ModBlimp {
         ModBlimp(); //constructor
 
         //initialization functions
+        void changeServoPins();
         void initDefault(); //contains an example of how to initialize the system
         void init(init_flags_t *init_flags, init_sensors_t  *sensors, feedback_t *PDterms);//sets up the control flags in the system
         void setFlags(init_flags_t *init_flags, init_sensors_t  *sensors, feedback_t *PDterms);//sets up the control flags in the system

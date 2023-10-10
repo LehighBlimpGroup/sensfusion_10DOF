@@ -1,8 +1,8 @@
 '''
-Author       : Hanqing Qi
+Author       : Edward Jeffs, Hanquing Qi
 Date         : 2023-07-20 13:34:09
-LastEditors  : Hanqing Qi
-LastEditTime : 2023-08-01 17:18:55
+LastEditors  : Edward Jeffs
+LastEditTime : 2023-08-31 15:03:55
 FilePath     : /undefined/Users/hanqingqi/Desktop/sensfusion_10DOF/ESP-NOW-Control/Serial_Sender.py
 Description  : Sender to send data to ESP32 through hardware serial port
 '''
@@ -20,10 +20,10 @@ PORT = 'COM6'
 
 feedbackPD = { "roll" : 0,
   "pitch" : 0,
-  "yaw" : 1,
+  "yaw" : 0,
   "x" : 0,
   "y" : 0,
-  "z" : 1,
+  "z" : 0,
   "rotation" : 0,
 
   "Croll" : 1,
@@ -45,8 +45,8 @@ feedbackPD = { "roll" : 0,
   "kdx" : 0,
   "kpy" : 0,
   "kdy" : 0,
-  "kpz" : 2,#.5
-  "kdz" : 30,#-3
+  "kpz" : 0,#.2,#.5
+  "kdz" : 0,#-3
   "kiz" : 0,
 
   "integral_dt" : 0,#.0001,
@@ -55,13 +55,16 @@ feedbackPD = { "roll" : 0,
 
   "lx" : .15,
   "pitchSign" : 1,
-  "pitchOffset" : -3.2816
+  "pitchOffset" : -3.2816,
+
+  "servo1offset" : -0.1,
+  "servo2offset" : .0
 }
 weights = { "eulerGamma" : 0,
   "rollRateGamma" : 0.7,
   "yawRateGamma" : 0.975,
   "pitchRateGamma" : 0.7,
-  "zGamma" : 0.9,
+  "zGamma" : 0.5,
   "vzGamma" : 0.975
 }
 
@@ -135,12 +138,16 @@ def esp_now_send(ser, input):
         ser.write(message.encode())
         try:
             incoming = ser.readline().decode(errors='ignore').strip()
-            print("Received Data: " + incoming)
+            #print("Received Data: " + incoming)
+            print(incoming[-4:])
+            if (incoming[-4:] == "Fail"):
+                return False
         except UnicodeDecodeError:
             print("Received malformed data!")
     except KeyboardInterrupt:
         print("Exiting Program")
         ser.close()
+    return True
 
 
 def init():
@@ -148,6 +155,7 @@ def init():
     return joystick
 
 def sendAllFlags():
+    print("send all flags!")
     esp_now_input = Control_Input(
         10, 0,
         feedbackPD["roll"], 
@@ -159,8 +167,8 @@ def sendAllFlags():
         feedbackPD["rotation"], 
         0, 0, 0, 0
     )
-    esp_now_send(sock, esp_now_input)
-    time.sleep(0.05)  # 0.005
+    while not esp_now_send(sock, esp_now_input):
+        time.sleep(0.05)  # 0.005
     
     esp_now_input = Control_Input(
         11, 0,
@@ -173,8 +181,8 @@ def sendAllFlags():
         feedbackPD["Cabsz"],
         0, 0, 0, 0
     )
-    esp_now_send(sock, esp_now_input)
-    time.sleep(0.05)  # 0.005
+    while not esp_now_send(sock, esp_now_input):
+        time.sleep(0.05)  # 0.005
     
     esp_now_input = Control_Input(
         12, 0,
@@ -186,8 +194,8 @@ def sendAllFlags():
         feedbackPD["kdyaw"], 
         0, 0, 0, 0, 0
     )
-    esp_now_send(sock, esp_now_input)
-    time.sleep(0.05)  # 0.005
+    while not esp_now_send(sock, esp_now_input):
+        time.sleep(0.05)  # 0.005
     
     esp_now_input = Control_Input(
         13, 0,
@@ -202,8 +210,8 @@ def sendAllFlags():
         feedbackPD["pitchOffset"], 
         0,0
     )
-    esp_now_send(sock, esp_now_input)
-    time.sleep(0.05)  # 0.005
+    while not esp_now_send(sock, esp_now_input):
+        time.sleep(0.05)  # 0.005
     
     esp_now_input = Control_Input(
         14, 0,
@@ -215,8 +223,8 @@ def sendAllFlags():
         weights["vzGamma"], 
         0, 0, 0, 0, 0
     )
-    esp_now_send(sock, esp_now_input)
-    time.sleep(0.05)  # 0.005
+    while not esp_now_send(sock, esp_now_input):
+        time.sleep(0.05)  # 0.005
     
     esp_now_input = Control_Input(
         15, 0,
@@ -224,17 +232,19 @@ def sendAllFlags():
         feedbackPD["integral_dt"],  
         feedbackPD["z_int_low"], 
         feedbackPD["z_int_high"],  
-        0,0,0,0,0,0,0
+        feedbackPD["servo1offset"],  
+        feedbackPD["servo2offset"], 
+        0,0,0,0,0
     )
-    esp_now_send(sock, esp_now_input)
-    time.sleep(0.05)  # 0.005
+    while not esp_now_send(sock, esp_now_input):
+        time.sleep(0.05)  # 0.005
 
 if __name__ == "__main__":
     sock = espnow_init()
 
 
     sendAllFlags()
-
+    
     joystick = init()
     l = 0.2  # meters
     absz = 0
@@ -254,13 +264,18 @@ if __name__ == "__main__":
     time_start = time.time()
     try:
         while True:
+            if pygame.joystick.get_count() == 0:
+                while pygame.joystick.get_count() == 0:
+                    pass
+                joystick = init()
+                
             # Get the joystick readings
             pygame.event.pump()
             b = joystick.get_button(1)
             x = joystick.get_button(2)
             left = joystick.get_hat(0)[0] == -1
             right = joystick.get_hat(0)[0] == 1
-            
+            fy = 0
             if b == 1 and b_old == 0:
                 b_state = not b_state
             b_old = b
@@ -270,39 +285,41 @@ if __name__ == "__main__":
             x_old = x
 
             if abs(joystick.get_axis(3)) > 0.1:
-                fx = -.8 * joystick.get_axis(3)  # left handler: up-down, inverted
+                fx = 0.2 * joystick.get_axis(3)  # left handler: up-down, inverted
             else:
                 fx = 0
-            if abs(joystick.get_axis(0)) > 0.1:
-                taux = -0.03 * joystick.get_axis(0)
+            if abs(joystick.get_axis(2)) > 0.1:
+                fy = 0.2 * joystick.get_axis(2)  # right handler: left-right
             else:
-                taux = 0
+                fy = 0
+            if abs(joystick.get_axis(0)) > 0.1:
+                tauz = 0.05 * joystick.get_axis(0)
+            else:
+                tauz = 0
             fz = 0  # -2*joystick.get_axis(1)  # right handler: up-down, inverted
 
-            if x_state:
-                if left == 1 and l_old == 0:
-                    print("left")
-                    snap += 1
-                    tauz += 3.1415 / 4
-                elif right == 1 and r_old == 0:
-                    print("right")
-                    snap += 1
-                    tauz += -3.1415 / 4
-            else:
-                snap = 0
-                if abs(joystick.get_axis(2)) > 0.1:
-                    tauz = -5 * joystick.get_axis(2)  # right handler: left-right
-                else:
-                    tauz = 0
+            # if x_state:
+            #     if left == 1 and l_old == 0:
+            #         print("left")
+            #         snap += 1
+            #         tauz += 3.1415 / 4
+            #     elif right == 1 and r_old == 0:
+            #         print("right")
+            #         snap += 1
+            #         tauz += -3.1415 / 4
+            # else:
+            #     snap = 0
+
             l_old = left
             r_old = right
-            fy = 0
+            
             tauy = 0
+            taux = 0
             # absz = .5
             if abs(joystick.get_axis(1)) > 0.15:
-                absz += -(time.time() - time_start) * joystick.get_axis(1)
+                absz += -(time.time() - time_start) * joystick.get_axis(1)*.3
             if b_state == 0:
-                absz = 1
+                absz = .4
                 x_state = 0
 
             time_start = time.time()

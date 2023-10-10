@@ -107,6 +107,9 @@ void ModBlimp::initDefault()
   //  magnetometerCalibration(offsets, transformationMatrix);
 }
 
+void ModBlimp::changeServoPins(){
+  
+}
 
 HardwareSerial MySerial0(0);
 
